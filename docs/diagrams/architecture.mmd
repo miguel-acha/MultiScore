@@ -1,0 +1,27 @@
+%% Arquitectura general del sistema desplegado
+flowchart LR
+    subgraph Cliente
+        U[Usuario / navegador]
+    end
+
+    subgraph Vercel["Vercel (frontend)"]
+        WEB["Web React + Vite\nExplorador / Simulador / Modelo"]
+    end
+
+    subgraph CloudRun["Google Cloud Run (backend)"]
+        API["API FastAPI\ncontenedor Docker"]
+        MODELS["Modelos .joblib\n(geo, full, calibrado)"]
+        DATA["Datos precalculados\nshots.parquet, matches.parquet"]
+        API --> MODELS
+        API --> DATA
+    end
+
+    U --> WEB
+    WEB -- "HTTPS (fetch)" --> API
+
+    subgraph Offline["Pipeline offline (una vez, en local)"]
+        SB[(StatsBomb Open Data\nLa Liga + Mundial 2022)]
+        PIPE["multiscore: data -> dataset -> train -> evaluate -> export"]
+        SB --> PIPE --> MODELS
+        PIPE --> DATA
+    end

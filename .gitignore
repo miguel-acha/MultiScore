@@ -1,0 +1,31 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Data (large, re-downloadable/re-generatable — see README for how to
+# reproduce). reports/ IS tracked: metrics, figures and tables are the
+# evidence cited in the write-up and are small (JSON/CSV/PNG).
+data/raw/
+data/processed/
+models/
+api/app/data/
+api/app/models/
+
+# Node / web
+web/node_modules/
+web/dist/
+web/.env.local
+
+# OS / editor
+.DS_Store
+*.log
+/tmp/
+
+# uv
+uv.lock.bak

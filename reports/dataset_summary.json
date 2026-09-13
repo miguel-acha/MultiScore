@@ -1,0 +1,32 @@
+{
+  "la_liga_cleaning": {
+    "input_rows": 21181,
+    "after_dedupe": 21181,
+    "duplicates_removed": 0,
+    "missing_location_removed": 0,
+    "penalties_removed": 245,
+    "after_cleaning": 20936,
+    "missing_freeze_frame": 0
+  },
+  "world_cup_2022_cleaning": {
+    "input_rows": 1494,
+    "after_dedupe": 1494,
+    "duplicates_removed": 0,
+    "missing_location_removed": 0,
+    "penalties_removed": 64,
+    "after_cleaning": 1430,
+    "missing_freeze_frame": 0
+  },
+  "goal_rate_la_liga": 0.11759648452426442,
+  "goal_rate_world_cup_2022": 0.1062937062937063,
+  "split_counts": {
+    "train": 14613,
+    "test": 3173,
+    "val": 3150
+  },
+  "with_freeze_frame_counts": {
+    "test": 3173,
+    "train": 14613,
+    "val": 3150
+  }
+}

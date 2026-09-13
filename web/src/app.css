@@ -1,0 +1,226 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, sans-serif;
+  background: #f7f8fa;
+  color: #1a1a1a;
+}
+
+.app {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 1.5rem;
+}
+
+header h1 {
+  margin: 0;
+  font-size: 1.8rem;
+}
+
+header p {
+  color: #555;
+  margin: 0.25rem 0 1rem;
+}
+
+nav {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+}
+
+nav button {
+  padding: 0.5rem 1rem;
+  border: 1px solid #ddd;
+  background: #fff;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.95rem;
+}
+
+nav button.active {
+  background: #22c55e;
+  color: #fff;
+  border-color: #22c55e;
+}
+
+.controls {
+  display: flex;
+  gap: 1.5rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+
+.controls label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 0.85rem;
+  color: #555;
+}
+
+.controls select {
+  padding: 0.4rem;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  min-width: 220px;
+}
+
+.explorer-body {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  gap: 1.5rem;
+}
+
+.shot-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  max-height: 500px;
+  overflow-y: auto;
+}
+
+.shot-item {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 0.5rem 0.7rem;
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  background: #fff;
+  cursor: pointer;
+  text-align: left;
+  font-size: 0.82rem;
+  position: relative;
+}
+
+.shot-item.selected {
+  border-color: #22c55e;
+  box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.2);
+}
+
+.shot-item.goal strong {
+  color: #16a34a;
+}
+
+.shot-item .diff {
+  color: #888;
+}
+
+.badge {
+  position: absolute;
+  top: 6px;
+  right: 8px;
+  background: #16a34a;
+  color: #fff;
+  font-size: 0.65rem;
+  padding: 1px 6px;
+  border-radius: 10px;
+}
+
+.shot-detail {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+.xg-panel {
+  display: flex;
+  gap: 0.8rem;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.xg-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0.6rem 1rem;
+  border-radius: 8px;
+  background: #fff;
+  border: 1px solid #e0e0e0;
+  min-width: 120px;
+}
+
+.xg-card span {
+  font-size: 0.75rem;
+  color: #666;
+}
+
+.xg-card strong {
+  font-size: 1.4rem;
+}
+
+.xg-card.highlight {
+  border-color: #22c55e;
+  background: #f0fdf4;
+}
+
+.shot-meta {
+  color: #666;
+  font-size: 0.85rem;
+}
+
+.simulator {
+  display: flex;
+  gap: 2rem;
+  flex-wrap: wrap;
+  align-items: flex-start;
+}
+
+.sim-actions {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+  margin-top: 0.5rem;
+}
+
+.sim-actions button {
+  padding: 0.3rem 0.6rem;
+  font-size: 0.8rem;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  background: #fff;
+  cursor: pointer;
+}
+
+.feature-list {
+  list-style: none;
+  padding: 0;
+  margin: 0.5rem 0 0;
+  font-size: 0.85rem;
+  color: #444;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.loading {
+  font-size: 0.8rem;
+  color: #888;
+}
+
+table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 0.85rem;
+}
+
+th,
+td {
+  border: 1px solid #e0e0e0;
+  padding: 0.5rem;
+  text-align: left;
+}
+
+th {
+  background: #f0f0f0;
+}
+
+.error {
+  color: #c00;
+  padding: 1rem;
+}

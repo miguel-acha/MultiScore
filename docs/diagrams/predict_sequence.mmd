@@ -1,0 +1,21 @@
+%% Secuencia de inferencia en vivo (simulador)
+sequenceDiagram
+    actor Usuario
+    participant Web as Web (React)
+    participant API as API (FastAPI)
+    participant Feat as multiscore.features
+    participant Mgeo as Modelo geo
+    participant Mfull as Modelo full
+
+    Usuario->>Web: arrastra tirador/defensores en la cancha
+    Web->>Web: debounce 200ms
+    Web->>API: POST /predict {shooter, freeze_frame}
+    API->>Feat: geo_features_from_row(shot)
+    API->>Feat: defender_features_from_freeze_frame(shooter, freeze_frame)
+    Feat-->>API: variables geométricas + defensivas
+    API->>Mgeo: predict_proba(features_geo)
+    Mgeo-->>API: xg_geo
+    API->>Mfull: predict_proba(features_full)
+    Mfull-->>API: xg_full
+    API-->>Web: {xg_geo, xg_full, xg_diff, computed_features}
+    Web-->>Usuario: actualiza panel de xG en tiempo real

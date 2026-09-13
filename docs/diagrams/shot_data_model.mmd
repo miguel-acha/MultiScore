@@ -1,0 +1,36 @@
+%% Modelo de datos: disparo y freeze frame
+erDiagram
+    MATCH ||--o{ SHOT : contiene
+    SHOT ||--o{ FREEZE_FRAME_PLAYER : "posiciones en el instante del remate"
+
+    MATCH {
+        int match_id PK
+        string match_date
+        int competition_id
+        int season_id
+        string competition_label
+    }
+
+    SHOT {
+        string event_id PK
+        int match_id FK
+        float loc_x
+        float loc_y
+        string shot_body_part
+        string shot_type
+        string shot_technique
+        string play_pattern
+        bool under_pressure
+        string shot_outcome
+        int is_goal
+        float statsbomb_xg
+        float xg_geo
+        float xg_full
+    }
+
+    FREEZE_FRAME_PLAYER {
+        float location_x
+        float location_y
+        bool teammate
+        string position_name
+    }

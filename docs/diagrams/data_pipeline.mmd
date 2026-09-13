@@ -1,0 +1,18 @@
+%% Pipeline de datos y entrenamiento
+flowchart TD
+    A[statsbombpy: descarga\nLa Liga 17 temporadas + Mundial 2022] --> B[data.py\ncache en data/raw/*.parquet]
+    B --> C["dataset.py: limpieza\n(quitar penales, duplicados,\nubicaciones inválidas)"]
+    C --> D["features.py: variables\ngeométricas + defensores\n(freeze frame)"]
+    D --> E["split_la_liga: 70/15/15\nagrupado por match_id"]
+    E --> F1[Train]
+    E --> F2[Validation]
+    E --> F3[Test]
+    D --> F4["Mundial 2022\n(prueba externa, nunca se toca\nen selección de modelo)"]
+
+    F1 --> G["train.py: 6 variantes\nLR / XGBoost / LightGBM\nx geo / full"]
+    F2 --> G
+    G --> H["evaluate.py: métricas,\nbootstrap, calibración,\ngeneralización"]
+    F3 --> H
+    F4 --> H
+    H --> I["export.py: precalcula xG\npara disparos navegables"]
+    I --> J[api/app/models + api/app/data]

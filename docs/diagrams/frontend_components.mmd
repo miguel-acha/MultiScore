@@ -1,0 +1,15 @@
+%% Componentes del frontend
+flowchart TD
+    App[App.tsx\ntabs: Explorador / Simulador / Modelo]
+    App --> Explorer[Explorer.tsx]
+    App --> Simulator[Simulator.tsx]
+    App --> ModelPage[ModelPage.tsx]
+
+    Explorer --> Pitch1[Pitch.tsx]
+    Simulator --> Pitch2[Pitch.tsx]
+
+    Explorer --> ApiClient[api.ts]
+    Simulator --> ApiClient
+    ModelPage --> ApiClient
+
+    ApiClient -- "fetch" --> Backend[(API FastAPI)]

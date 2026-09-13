@@ -1,0 +1,42 @@
+{
+  "la_liga_shots_total": 20936,
+  "world_cup_2022_shots_total": 1430,
+  "la_liga_goal_rate": 0.11759648452426442,
+  "world_cup_2022_goal_rate": 0.1062937062937063,
+  "la_liga_freeze_frame_coverage": 1.0,
+  "world_cup_2022_freeze_frame_coverage": 1.0,
+  "la_liga_top_teams_by_shots": {
+    "Barcelona": 8169,
+    "Real Madrid": 1080,
+    "Atl\u00e9tico Madrid": 753,
+    "Sevilla": 743,
+    "Real Sociedad": 680,
+    "Athletic Club": 677,
+    "Valencia": 650,
+    "Getafe": 626,
+    "Rayo Vallecano": 602,
+    "Levante UD": 601
+  },
+  "la_liga_top_team_share_of_shots": 0.3901891478792511,
+  "bias_note": "StatsBomb's open La Liga data is not a uniform sample across teams: the single most-represented team accounts for 39.0% of all shots (open data historically skews towards Barcelona matches). This is a known sampling bias in the training source and is the reason the World Cup 2022 (a different competition, different teams, different playing styles) is used as an external generalization test rather than another La Liga split.",
+  "la_liga_shots_per_season_id": {
+    "1": 965,
+    "2": 874,
+    "4": 878,
+    "21": 840,
+    "22": 730,
+    "23": 858,
+    "24": 714,
+    "25": 800,
+    "26": 919,
+    "27": 9071,
+    "37": 157,
+    "38": 424,
+    "39": 672,
+    "40": 685,
+    "41": 754,
+    "42": 740,
+    "90": 827,
+    "278": 28
+  }
+}

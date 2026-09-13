@@ -1,0 +1,55 @@
+# Training configuration for MultiScore xG models.
+# Every value here is reported verbatim in reports/metrics.json and
+# models/model_card.json so the document's "Hiperparámetros" and
+# "Infraestructura de entrenamiento" subsections can cite exact numbers.
+
+random_seed: 42
+
+# Random search budget per model family (LR / XGBoost / LightGBM), each run
+# twice: once on geo-only features, once on geo+defender features.
+n_hyperparam_trials: 30
+cv_folds: 4 # GroupKFold folds within the La Liga training split
+
+logistic_regression:
+  C: [0.001, 0.01, 0.1, 1.0, 10.0, 100.0]
+  penalty: "l2"
+  max_iter: 2000
+  class_weight: "balanced"
+
+xgboost:
+  n_estimators: 2000 # upper bound; early stopping picks the real number
+  early_stopping_rounds: 50
+  learning_rate: [0.01, 0.03, 0.05, 0.1]
+  max_depth: [2, 3, 4, 5, 6]
+  subsample: [0.6, 0.8, 1.0]
+  colsample_bytree: [0.6, 0.8, 1.0]
+  min_child_weight: [1, 5, 10]
+  reg_lambda: [0.0, 1.0, 5.0]
+  objective: "binary:logistic"
+  eval_metric: "logloss"
+
+lightgbm:
+  n_estimators: 2000
+  early_stopping_rounds: 50
+  learning_rate: [0.01, 0.03, 0.05, 0.1]
+  num_leaves: [15, 31, 63]
+  max_depth: [-1, 4, 6, 8]
+  subsample: [0.6, 0.8, 1.0]
+  colsample_bytree: [0.6, 0.8, 1.0]
+  min_child_samples: [10, 20, 50]
+  reg_lambda: [0.0, 1.0, 5.0]
+  objective: "binary"
+  metric: "binary_logloss"
+
+# Threshold used for Precision/Recall/F1/confusion-matrix reporting, chosen
+# as "the classic default" AND recomputed as "the F1-optimal threshold on
+# validation" - both are reported, per the guide's requirement to justify
+# any metric choice.
+default_threshold: 0.5
+
+bootstrap:
+  n_resamples: 1000
+  confidence_level: 0.95
+  # Resampling is done by match_id (not by individual shot) to respect the
+  # correlation between shots in the same match.
+  group_column: "match_id"

@@ -1,0 +1,25 @@
+%% Diagrama de despliegue
+flowchart TB
+    subgraph GitHub
+        REPO[Repositorio MultiScore]
+        CI[GitHub Actions CI\nruff + pytest + npm build]
+        REPO --> CI
+    end
+
+    subgraph Vercel
+        BUILD_WEB[Build: npm run build]
+        CDN[CDN estático]
+        BUILD_WEB --> CDN
+    end
+
+    subgraph GCP["Google Cloud Platform"]
+        AR[Artifact Registry\nimagen Docker]
+        RUN["Cloud Run\nmin-instances=0, 512Mi"]
+        AR --> RUN
+    end
+
+    REPO -- "push a main" --> Vercel
+    REPO -- "gcloud run deploy --source" --> AR
+
+    NAVEGADOR[Navegador del usuario] --> CDN
+    NAVEGADOR -- "VITE_API_URL" --> RUN
