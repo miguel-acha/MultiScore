@@ -32,14 +32,11 @@ export default function OutcomeMarker({
   return (
     <svg {...props} viewBox="0 0 20 20" className={className ?? "block"} style={{ overflow: "visible" }}>
       {style.shape === "ball" && (
-        // Classic white/black ball, not tinted lime - a goal reads instantly
-        // as "the" soccer ball icon this way, instead of just a big colored
-        // dot that blended into the other outcome dots at a glance.
-        <>
-          <circle cx={10} cy={10} r={9} fill="#ffffff" stroke="#07090d" strokeWidth={1.1} />
-          <polygon points="10,4.8 13.6,7.4 12.2,11.8 7.8,11.8 6.4,7.4" fill="#07090d" />
-          <path d="M10,4.8 L10,2.4 M13.6,7.4 L16.3,6.5 M12.2,11.8 L13.6,14.6 M7.8,11.8 L6.4,14.6 M6.4,7.4 L3.7,6.5" stroke="#07090d" strokeWidth={1} strokeLinecap="round" />
-        </>
+        // The real ball artwork the user picked, not a hand-drawn
+        // approximation - a goal reads instantly as "the" soccer ball icon
+        // this way, instead of just a big colored dot that blended into
+        // the other outcome dots at a glance.
+        <image href="/images/ball.png" x={1} y={1} width={18} height={18} preserveAspectRatio="xMidYMid meet" />
       )}
       {style.shape === "square" && <rect x={3} y={3} width={14} height={14} rx={3} fill={style.color} stroke="#07090d" strokeWidth={1} />}
       {style.shape === "ring" && <circle cx={10} cy={10} r={7.5} fill="none" stroke={style.color} strokeWidth={2} />}
