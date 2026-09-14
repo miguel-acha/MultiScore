@@ -4,7 +4,8 @@ Predicción de xG (probabilidad de gol) con Machine Learning, incorporando la
 **posición de los defensores** como variable diferenciadora. Proyecto final
 de Tópicos Selectos en TIC, Facultad de Ingeniería, UPB.
 
-Web app: [ver despliegue] · API: [ver despliegue] · Documento completo: ver `docs/`
+**Web app:** https://web-sepia-theta-94.vercel.app
+**API:** https://multiscore-api-1043504169201.us-central1.run.app (docs interactivas en `/docs`)
 
 ## Qué hace
 
@@ -95,14 +96,34 @@ npm run dev
 
 ### API en Google Cloud Run
 
+El `Dockerfile` copia archivos desde `ml/multiscore/` (fuera de `api/`), así
+que el contexto de build tiene que ser la raíz del repo, no `api/`. Por eso
+no se usa `gcloud run deploy --source api/` directamente, sino un paso de
+Cloud Build con `api/cloudbuild.yaml` (que sí apunta bien al Dockerfile y al
+contexto raíz), y luego el deploy apuntando a la imagen ya construida:
+
 ```bash
+PROJECT_ID=<tu-project-id>
+IMAGE="us-central1-docker.pkg.dev/${PROJECT_ID}/cloud-run-source-deploy/multiscore-api:latest"
+
+# 1. Construir la imagen (contexto = raíz del repo, Dockerfile = api/Dockerfile)
+gcloud builds submit . --config=api/cloudbuild.yaml --substitutions="_IMAGE=${IMAGE}"
+
+# 2. Desplegar esa imagen
 gcloud run deploy multiscore-api \
-  --source api/ \
-  --region us-central1 \
+  --image="$IMAGE" \
+  --region=us-central1 \
   --allow-unauthenticated \
-  --min-instances 0 \
-  --memory 512Mi
+  --min-instances=0 \
+  --memory=512Mi \
+  --set-env-vars="MULTISCORE_ALLOWED_ORIGINS=https://<tu-dominio-de-vercel>"
 ```
+
+**Importante:** `.gcloudignore` está configurado para NO excluir
+`api/app/models/` ni `api/app/data/` (aunque `.gitignore` sí los excluye de
+git) — la API los necesita para arrancar. Si herramientas Cloud usan
+`.gitignore` por defecto, los patrones deben ir anclados a la raíz (`/models/`,
+no `models/`) para no excluir por accidente `api/app/models/`.
 
 Capa gratuita: 2 millones de solicitudes/mes. Con `min-instances 0` el
 servicio se apaga cuando no hay tráfico (costo esperado: $0), a cambio de un
@@ -125,6 +146,15 @@ uv run python scripts/load_test.py \
   --match-id <id-de-un-partido-del-mundial-2022> \
   --n-requests 500 --concurrency 10
 ```
+
+Resultado contra la API en producción (200 pedidos, concurrencia 10, ver
+`reports/performance.json`):
+
+| Endpoint | p50 | p95 | Errores |
+|---|---|---|---|
+| `/health` (arranque en frío) | 371 ms | - | 0% |
+| `/matches/{id}/shots` (datos precalculados) | 422 ms | 517 ms | 0% |
+| `/predict` (inferencia en vivo) | 815 ms | 1005 ms | 0% |
 
 Guarda p50/p95/p99 de latencia y tasa de error en `reports/performance.json`.
 

@@ -1,0 +1,17 @@
+# Cloud Build source upload exclusions. NOTE: this intentionally does NOT
+# reuse .gitignore (the default gcloud behavior) - .gitignore excludes
+# api/app/data/ and api/app/models/ from git (they're generated, large
+# binary artifacts), but the API container needs those exact files at
+# runtime, so they must be uploaded to Cloud Build.
+.git/
+.venv/
+/data/raw/
+/data/processed/
+/models/
+/reports/
+web/node_modules/
+web/dist/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/

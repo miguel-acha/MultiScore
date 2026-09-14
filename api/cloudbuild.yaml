@@ -1,0 +1,17 @@
+# Cloud Build config for the API image. Needed because the Dockerfile
+# (api/Dockerfile) COPYs files from the monorepo root (ml/multiscore/), so
+# the build context must be the repo root, not api/ - `gcloud run deploy
+# --source` alone can't express that context/dockerfile-path combination.
+steps:
+  - name: "gcr.io/cloud-builders/docker"
+    args:
+      - "build"
+      - "-f"
+      - "api/Dockerfile"
+      - "-t"
+      - "${_IMAGE}"
+      - "."
+images:
+  - "${_IMAGE}"
+options:
+  logging: CLOUD_LOGGING_ONLY
