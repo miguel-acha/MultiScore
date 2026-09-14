@@ -349,6 +349,25 @@ def run_full_evaluation(seed: int = 42) -> dict:
     metrics["selected_production_model"] = selected
     metrics["dataset_info"] = train_results.get("_dataset_info")
 
+    # Monotonic-constraints ablation: does imposing domain knowledge (a
+    # defender can never make a shot easier, etc.) cost or help predictive
+    # performance, compared to letting the tree models learn unconstrained?
+    unconstrained = train_results.get("_monotonic_constraints_ablation", {})
+    ablation = {}
+    for family in ("xgboost", "lightgbm"):
+        constrained_key = f"{family}_full"
+        unconstrained_key = f"{family}_full_unconstrained"
+        if constrained_key in metrics["variants"] and unconstrained_key in unconstrained:
+            ablation[family] = {
+                "constrained": {
+                    "val_logloss": train_results[constrained_key]["val_logloss"],
+                    "test_logloss": metrics["variants"][constrained_key]["la_liga_test"]["log_loss"],
+                    "test_auc": metrics["variants"][constrained_key]["la_liga_test"]["roc_auc"],
+                },
+                "unconstrained": unconstrained[unconstrained_key],
+            }
+    metrics["monotonic_constraints_ablation"] = ablation
+
     # Interpretability: LR coefficients + tree-model gain importance for the
     # "full" variant of each family, so the report can discuss which
     # features (geometric or defensive) actually drive predictions.

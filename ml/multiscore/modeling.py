@@ -31,6 +31,7 @@ FEATURE_SETS: dict[str, dict[str, list[str]]] = {
             "gk_distance_to_shooter_m",
             "gk_distance_to_goal_line_m",
             "gk_deviation_from_shot_line_m",
+            "goal_coverage_pct",
         ],
         "categorical": ["shot_body_part", "shot_type", "shot_technique", "play_pattern"],
         "boolean": [
@@ -39,9 +40,62 @@ FEATURE_SETS: dict[str, dict[str, list[str]]] = {
             "shot_one_on_one",
             "goalkeeper_present",
             "gk_in_triangle",
+            "open_goal_geometric",
         ],
     },
 }
+
+# Monotonic constraints for the "full" feature set, applied to XGBoost and
+# LightGBM so the model can't learn a physically nonsensical direction for
+# a feature whose effect on shot difficulty is unambiguous by definition
+# (e.g. more defenders in the way can never make a shot EASIER). Expressed
+# per numeric/boolean column (categorical one-hot columns and the
+# goalkeeper-distance columns, whose direction is genuinely ambiguous
+# depending on context, are left unconstrained = 0).
+#   -1 = feature can only decrease predicted xG as it increases
+#   +1 = feature can only increase predicted xG as it increases
+#    0 = unconstrained
+MONOTONIC_CONSTRAINTS = {
+    "geo": {
+        "distance_to_goal_m": -1,
+        "shot_angle_deg": 1,
+    },
+    "full": {
+        "distance_to_goal_m": -1,
+        "shot_angle_deg": 1,
+        "defenders_in_triangle": -1,
+        "defenders_within_1m": -1,
+        "defenders_within_3m": -1,
+        "nearest_defender_dist_m": 1,
+        "gk_in_triangle": -1,
+        "goal_coverage_pct": -1,
+        "open_goal_geometric": 1,
+        # Goalkeeper features: constrained too, despite being individually
+        # ambiguous in some real-world nuances (e.g. a keeper off his line
+        # can occasionally help him), because the required invariant
+        # "removing an unobstructing goalkeeper never lowers xG" only holds
+        # under monotonic constraints if EVERY feature that changes when a
+        # goalkeeper is added/removed moves in a jointly-consistent
+        # direction - leaving any one of these unconstrained lets it
+        # dominate and flip that comparison (which is exactly what broke
+        # the v1 model). See tests/test_model_sanity.py.
+        "goalkeeper_present": -1,
+        "gk_distance_to_shooter_m": 1,
+        "gk_distance_to_goal_line_m": 1,
+        "gk_deviation_from_shot_line_m": 1,
+    },
+}
+
+
+def monotonic_constraints_vector(feature_set_name: str, feature_names: list[str]) -> tuple[int, ...]:
+    """Build the (constraint per expanded feature) tuple that XGBoost's
+    `monotone_constraints` and LightGBM's `monotone_constraints` expect,
+    aligned 1:1 with `feature_names` (as returned by get_onehot_feature_names).
+    Any feature not named in MONOTONIC_CONSTRAINTS gets 0 (unconstrained) -
+    this covers every one-hot categorical column automatically.
+    """
+    constraints = MONOTONIC_CONSTRAINTS[feature_set_name]
+    return tuple(constraints.get(name, 0) for name in feature_names)
 
 
 def build_preprocessor(feature_set_name: str) -> ColumnTransformer:

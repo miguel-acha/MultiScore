@@ -14,6 +14,8 @@ from multiscore.geometry import (
     deviation_from_shot_line_m,
     distance_m,
     distance_to_goal_m,
+    goal_coverage_pct,
+    goal_shadow_interval,
     point_in_triangle,
     shot_angle_deg,
 )
@@ -105,3 +107,61 @@ def test_deviation_from_shot_line_positive_off_line():
     off_line_point = (100.0, 45.0)
     dev = deviation_from_shot_line_m(shooter, off_line_point)
     assert dev == pytest.approx(5 * 0.9144, abs=0.01)
+
+
+def test_goal_shadow_interval_none_for_obstacle_behind_shooter():
+    shooter = (100.0, 40.0)
+    behind = (90.0, 40.0)
+    assert goal_shadow_interval(shooter, behind) is None
+
+
+def test_goal_shadow_interval_centered_on_projection():
+    shooter = (100.0, 40.0)
+    obstacle = (110.0, 40.0)  # halfway to goal, centered
+    lo, hi = goal_shadow_interval(shooter, obstacle)
+    assert (lo + hi) / 2 == pytest.approx(40.0, abs=1e-6)
+    assert hi > lo
+
+
+def test_goal_coverage_pct_empty_net_is_zero():
+    shooter = (100.0, 40.0)
+    assert goal_coverage_pct(shooter, []) == 0.0
+
+
+def test_goal_coverage_pct_small_for_single_body_near_goal_line():
+    # A single person-width obstacle standing right on the goal line only
+    # blocks a small sliver of an 8-yard-wide goal - realistic, not a bug.
+    shooter = (100.0, 40.0)
+    keeper_on_line = (119.5, 40.0)
+    coverage = goal_coverage_pct(shooter, [keeper_on_line])
+    assert 0.0 < coverage < 20.0
+
+
+def test_goal_coverage_pct_high_when_obstacle_right_in_front_of_shooter():
+    # An obstacle very close to the SHOOTER (not the goal) fills most of the
+    # field of view, the same way a hand held up close to your face blocks
+    # more than one held at arm's length - this is the realistic case that
+    # should produce high coverage.
+    shooter = (100.0, 40.0)
+    right_in_front = (101.0, 40.0)
+    coverage = goal_coverage_pct(shooter, [right_in_front])
+    assert coverage > 60.0
+
+
+def test_goal_coverage_pct_far_off_to_the_side_is_zero():
+    shooter = (100.0, 40.0)
+    off_to_the_side = (20.0, 5.0)
+    assert goal_coverage_pct(shooter, [off_to_the_side]) == 0.0
+
+
+def test_goal_coverage_pct_never_exceeds_100():
+    shooter = (100.0, 40.0)
+    wall = [(115.0, y) for y in range(30, 51, 2)]
+    assert goal_coverage_pct(shooter, wall) <= 100.0
+
+
+def test_goal_coverage_pct_overlapping_obstacles_dont_double_count():
+    shooter = (100.0, 40.0)
+    single = goal_coverage_pct(shooter, [(110.0, 40.0)])
+    nearly_identical = goal_coverage_pct(shooter, [(110.0, 40.0), (110.01, 40.005)])
+    assert nearly_identical == pytest.approx(single, abs=1.5)

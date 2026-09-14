@@ -26,6 +26,7 @@ from multiscore.geometry import (
     deviation_from_shot_line_m,
     distance_m,
     distance_to_goal_m,
+    goal_coverage_pct,
     point_in_triangle,
     shot_angle_deg,
 )
@@ -53,14 +54,26 @@ DEFENDER_FEATURE_COLUMNS = [
     "gk_distance_to_goal_line_m",
     "gk_in_triangle",
     "gk_deviation_from_shot_line_m",
+    "goal_coverage_pct",
+    "open_goal_geometric",
 ]
 
 ALL_FEATURE_COLUMNS = GEO_FEATURE_COLUMNS + DEFENDER_FEATURE_COLUMNS
 
-# A sentinel used when a freeze frame is missing entirely, so the "defender"
-# feature block can be flagged and excluded/imputed downstream rather than
-# silently treated as "zero defenders nearby".
+# A sentinel used ONLY when the freeze frame itself is missing entirely
+# (no data at all), so those rows can be flagged and excluded from the
+# "with defenders" training set rather than silently treated as "wide open".
 NO_FREEZE_FRAME_SENTINEL = -1.0
+
+# When the freeze frame IS present but simply has no defender/goalkeeper
+# nearby, that is real information ("essentially unobstructed"), not
+# missing data - it must be encoded as a large, realistic distance, not
+# -1. A tree model reading -1 for "distance to nearest defender" learns
+# "defender is on top of the shooter" (the opposite of the truth), which
+# is exactly what made the trained model score an open-goal shot as
+# barely-more-dangerous-than-a-crowded one. 40m is far past any distance
+# that could plausibly affect a shot on a 120x80yd pitch.
+FAR_AWAY_M = 40.0
 
 
 def geo_features_from_row(row: pd.Series) -> dict:
@@ -94,15 +107,26 @@ def defender_features_from_freeze_frame(
     The shooter is not part of the freeze frame and must be identified by
     the corresponding shot row.
 
-    If freeze_frame is None/empty, every numeric field is set to the
-    NO_FREEZE_FRAME_SENTINEL so these rows can be filtered out of the
-    "with defenders" training set (they carry no real information) while
-    still being usable for the "geo-only" model.
+    If freeze_frame is None (StatsBomb has no 360 data for this shot at
+    all), every numeric field is set to the NO_FREEZE_FRAME_SENTINEL so
+    these rows can be filtered out of the "with defenders" training set
+    (they carry no real information) while still being usable for the
+    "geo-only" model.
+
+    An empty list (as opposed to None) is a different, meaningful state:
+    "we do have freeze-frame data for this shot, and it confirms nobody
+    else was in it" - e.g. a live /predict request from the simulator
+    after the user drags every defender away. That must fall through to
+    the normal computation below (which correctly encodes "no opponent
+    nearby" as far-away distances / open_goal_geometric=1), not be
+    conflated with missing data. Confusing the two was the root cause of
+    an open-goal shot with zero defenders in the simulator scoring an
+    oddly *low* xG in v1/v2 of this model.
     """
     # freeze_frame may come back as a numpy array (round-tripped through
     # parquet), where a plain `if not freeze_frame` raises ambiguous-truth-
-    # value errors for arrays with >1 element - check length explicitly.
-    if freeze_frame is None or len(freeze_frame) == 0:
+    # value errors for arrays with >1 element - check explicitly instead.
+    if freeze_frame is None:
         return {
             "defenders_in_triangle": NO_FREEZE_FRAME_SENTINEL,
             "defenders_within_1m": NO_FREEZE_FRAME_SENTINEL,
@@ -114,6 +138,8 @@ def defender_features_from_freeze_frame(
             "gk_distance_to_goal_line_m": NO_FREEZE_FRAME_SENTINEL,
             "gk_in_triangle": 0,
             "gk_deviation_from_shot_line_m": NO_FREEZE_FRAME_SENTINEL,
+            "goal_coverage_pct": NO_FREEZE_FRAME_SENTINEL,
+            "open_goal_geometric": 0,
             "has_freeze_frame": False,
         }
 
@@ -145,7 +171,9 @@ def defender_features_from_freeze_frame(
     defender_distances = [distance_m(shooter, p) for p in defenders]
     n_within_1m = sum(1 for d in defender_distances if d <= 1.0)
     n_within_3m = sum(1 for d in defender_distances if d <= 3.0)
-    nearest = min(defender_distances) if defender_distances else NO_FREEZE_FRAME_SENTINEL
+    # No opponent nearby is a real, valid state (not missing data) - encode
+    # it as "far away" rather than the missing-data sentinel. See FAR_AWAY_M.
+    nearest = min(defender_distances) if defender_distances else FAR_AWAY_M
 
     if goalkeeper is not None:
         gk_dist_shooter = distance_m(shooter, goalkeeper)
@@ -154,11 +182,17 @@ def defender_features_from_freeze_frame(
         gk_deviation = deviation_from_shot_line_m(shooter, goalkeeper)
         gk_present = 1
     else:
-        gk_dist_shooter = NO_FREEZE_FRAME_SENTINEL
-        gk_dist_goal_line = NO_FREEZE_FRAME_SENTINEL
-        gk_in_tri = 0
-        gk_deviation = NO_FREEZE_FRAME_SENTINEL
+        # Same reasoning as `nearest` above: no goalkeeper visible in the
+        # freeze frame (e.g. an empty net) is real information, encoded as
+        # "very far away" - never the missing-data sentinel.
+        gk_dist_shooter = FAR_AWAY_M
+        gk_dist_goal_line = FAR_AWAY_M
+        gk_in_tri = False
+        gk_deviation = FAR_AWAY_M
         gk_present = 0
+
+    coverage_pct = goal_coverage_pct(shooter, defenders + ([goalkeeper] if goalkeeper else []))
+    open_goal = int(n_in_triangle == 0 and not gk_in_tri)
 
     return {
         "defenders_in_triangle": n_in_triangle,
@@ -171,6 +205,8 @@ def defender_features_from_freeze_frame(
         "gk_distance_to_goal_line_m": gk_dist_goal_line,
         "gk_in_triangle": int(gk_in_tri),
         "gk_deviation_from_shot_line_m": gk_deviation,
+        "goal_coverage_pct": coverage_pct,
+        "open_goal_geometric": open_goal,
         "has_freeze_frame": True,
     }
 

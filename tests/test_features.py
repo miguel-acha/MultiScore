@@ -5,6 +5,7 @@ logic that is the core technical contribution of the project.
 import pandas as pd
 import pytest
 from multiscore.features import (
+    FAR_AWAY_M,
     NO_FREEZE_FRAME_SENTINEL,
     build_feature_row,
     defender_features_from_freeze_frame,
@@ -29,9 +30,17 @@ def test_empty_freeze_frame_returns_sentinels():
     assert result["goalkeeper_present"] == 0
 
 
-def test_empty_list_freeze_frame_returns_sentinels():
+def test_empty_list_freeze_frame_means_confirmed_open_not_missing():
+    # None (no key at all) means "no 360 data" -> missing-data sentinels.
+    # [] means "we do have freeze-frame data and it's empty" -> a real,
+    # confirmed-open shot (this is what a live /predict call sends after
+    # the simulator's defenders are all dragged away), so it must NOT be
+    # treated as missing data.
     result = defender_features_from_freeze_frame((100.0, 40.0), [])
-    assert result["has_freeze_frame"] is False
+    assert result["has_freeze_frame"] is True
+    assert result["nearest_defender_dist_m"] == FAR_AWAY_M
+    assert result["open_goal_geometric"] == 1
+    assert result["goal_coverage_pct"] == 0
 
 
 def test_defender_directly_in_front_of_goal_counts_in_triangle():
@@ -75,12 +84,76 @@ def test_goalkeeper_detected_and_flagged():
     assert result["gk_distance_to_goal_line_m"] == pytest.approx(2 * 0.9144, abs=0.01)
 
 
-def test_no_goalkeeper_in_freeze_frame():
+def test_no_goalkeeper_in_freeze_frame_uses_far_away_not_sentinel():
+    # A present freeze frame with no goalkeeper (e.g. an empty net) is real
+    # information - it must be encoded as "far away", never as the
+    # missing-data sentinel (-1), which a tree model would misread as
+    # "goalkeeper right on top of the shooter".
     shooter = (100.0, 40.0)
     freeze_frame = [_ff_entry(110.0, 40.0, position="Center Back")]
     result = defender_features_from_freeze_frame(shooter, freeze_frame)
     assert result["goalkeeper_present"] == 0
-    assert result["gk_distance_to_shooter_m"] == NO_FREEZE_FRAME_SENTINEL
+    assert result["gk_distance_to_shooter_m"] == FAR_AWAY_M
+    assert result["gk_distance_to_goal_line_m"] == FAR_AWAY_M
+    assert result["gk_deviation_from_shot_line_m"] == FAR_AWAY_M
+
+
+def test_no_defenders_nearby_uses_far_away_not_sentinel():
+    # No opponent at all in the freeze frame (a teammate doesn't count as
+    # a defender) - a truly open goal, which must read as "far away", not
+    # as the missing-data sentinel.
+    shooter = (100.0, 40.0)
+    freeze_frame = [_ff_entry(105.0, 40.0, teammate=True)]
+    result = defender_features_from_freeze_frame(shooter, freeze_frame)
+    assert result["nearest_defender_dist_m"] == FAR_AWAY_M
+
+
+def test_open_goal_geometric_true_when_nobody_in_triangle():
+    shooter = (100.0, 40.0)
+    # Everyone is far off to the side, out of the shooter->posts triangle.
+    freeze_frame = [_ff_entry(20.0, 5.0), _ff_entry(20.0, 75.0, position="Goalkeeper")]
+    result = defender_features_from_freeze_frame(shooter, freeze_frame)
+    assert result["open_goal_geometric"] == 1
+
+
+def test_open_goal_geometric_false_when_goalkeeper_blocks():
+    shooter = (100.0, 40.0)
+    freeze_frame = [_ff_entry(115.0, 40.0, position="Goalkeeper")]
+    result = defender_features_from_freeze_frame(shooter, freeze_frame)
+    assert result["open_goal_geometric"] == 0
+
+
+def test_goal_coverage_pct_zero_for_truly_empty_net():
+    shooter = (110.0, 40.0)
+    freeze_frame = []
+    result = defender_features_from_freeze_frame(shooter, freeze_frame)
+    assert result["has_freeze_frame"] is True
+    assert result["goal_coverage_pct"] == 0
+
+
+def test_goal_coverage_pct_high_for_defender_right_in_front_of_shooter():
+    # A body right next to the shooter fills most of the field of view -
+    # see the geometry-level test for the full explanation.
+    shooter = (100.0, 40.0)
+    freeze_frame = [_ff_entry(101.0, 40.0)]
+    result = defender_features_from_freeze_frame(shooter, freeze_frame)
+    assert result["goal_coverage_pct"] > 50.0
+
+
+def test_goal_coverage_pct_zero_when_only_defender_outside_triangle():
+    shooter = (100.0, 40.0)
+    freeze_frame = [_ff_entry(20.0, 5.0)]
+    result = defender_features_from_freeze_frame(shooter, freeze_frame)
+    assert result["goal_coverage_pct"] == 0.0
+
+
+def test_goal_coverage_pct_overlapping_defenders_not_double_counted():
+    shooter = (100.0, 40.0)
+    one_defender = [_ff_entry(110.0, 40.0)]
+    two_overlapping = [_ff_entry(110.0, 40.0), _ff_entry(110.01, 40.005)]
+    r1 = defender_features_from_freeze_frame(shooter, one_defender)
+    r2 = defender_features_from_freeze_frame(shooter, two_overlapping)
+    assert r2["goal_coverage_pct"] == pytest.approx(r1["goal_coverage_pct"], abs=1.5)
 
 
 def test_defenders_within_distance_thresholds():

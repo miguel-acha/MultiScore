@@ -41,7 +41,12 @@ from sklearn.calibration import CalibratedClassifierCV
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import log_loss, roc_auc_score
 
-from multiscore.modeling import build_preprocessor, prepare_frame
+from multiscore.modeling import (
+    build_preprocessor,
+    get_onehot_feature_names,
+    monotonic_constraints_vector,
+    prepare_frame,
+)
 
 ROOT = Path(__file__).resolve().parents[2]
 PROCESSED_DIR = ROOT / "data" / "processed"
@@ -130,7 +135,9 @@ def train_logistic_regression(X_train, y_train, X_val, y_val, cfg: dict, seed: i
     return best
 
 
-def train_xgboost(X_train, y_train, X_val, y_val, cfg: dict, seed: int, n_trials: int, rng):
+def train_xgboost(
+    X_train, y_train, X_val, y_val, cfg: dict, seed: int, n_trials: int, rng, monotone_constraints=None
+):
     candidates = _grid_sample(cfg["xgboost"], rng, n_trials)
     best = None
     for params in candidates:
@@ -145,6 +152,7 @@ def train_xgboost(X_train, y_train, X_val, y_val, cfg: dict, seed: int, n_trials
             objective=cfg["xgboost"]["objective"],
             eval_metric=cfg["xgboost"]["eval_metric"],
             early_stopping_rounds=cfg["xgboost"]["early_stopping_rounds"],
+            monotone_constraints=monotone_constraints,
             random_state=seed,
             n_jobs=-1,
         )
@@ -169,7 +177,9 @@ def train_xgboost(X_train, y_train, X_val, y_val, cfg: dict, seed: int, n_trials
     return best
 
 
-def train_lightgbm(X_train, y_train, X_val, y_val, cfg: dict, seed: int, n_trials: int, rng):
+def train_lightgbm(
+    X_train, y_train, X_val, y_val, cfg: dict, seed: int, n_trials: int, rng, monotone_constraints=None
+):
     candidates = _grid_sample(cfg["lightgbm"], rng, n_trials)
     best = None
     for params in candidates:
@@ -183,6 +193,7 @@ def train_lightgbm(X_train, y_train, X_val, y_val, cfg: dict, seed: int, n_trial
             min_child_samples=params["min_child_samples"],
             reg_lambda=params["reg_lambda"],
             objective=cfg["lightgbm"]["objective"],
+            monotone_constraints=list(monotone_constraints) if monotone_constraints else None,
             random_state=seed,
             n_jobs=-1,
             verbosity=-1,
@@ -235,15 +246,7 @@ def run_all_variants(seed: int = 42) -> dict:
     y_ext = splits["external_test"]["is_goal"].values
 
     results = {}
-    trainers = {
-        "logistic_regression": lambda Xtr, Xv: train_logistic_regression(Xtr, y_train, Xv, y_val, cfg, seed),
-        "xgboost": lambda Xtr, Xv: train_xgboost(
-            Xtr, y_train, Xv, y_val, cfg, seed, cfg["n_hyperparam_trials"], rng
-        ),
-        "lightgbm": lambda Xtr, Xv: train_lightgbm(
-            Xtr, y_train, Xv, y_val, cfg, seed, cfg["n_hyperparam_trials"], rng
-        ),
-    }
+    ablation_results = {}
 
     for feature_set_name in ("geo", "full"):
         preprocessor = build_preprocessor(feature_set_name)
@@ -251,6 +254,19 @@ def run_all_variants(seed: int = 42) -> dict:
         X_val = _transform(preprocessor, feature_set_name, splits["val"])
         X_test = _transform(preprocessor, feature_set_name, splits["test"])
         X_ext = _transform(preprocessor, feature_set_name, splits["external_test"])
+
+        feature_names = get_onehot_feature_names(preprocessor, feature_set_name)
+        constraints = monotonic_constraints_vector(feature_set_name, feature_names)
+
+        trainers = {
+            "logistic_regression": lambda Xtr, Xv: train_logistic_regression(Xtr, y_train, Xv, y_val, cfg, seed),
+            "xgboost": lambda Xtr, Xv, mc=constraints: train_xgboost(
+                Xtr, y_train, Xv, y_val, cfg, seed, cfg["n_hyperparam_trials"], rng, monotone_constraints=mc
+            ),
+            "lightgbm": lambda Xtr, Xv, mc=constraints: train_lightgbm(
+                Xtr, y_train, Xv, y_val, cfg, seed, cfg["n_hyperparam_trials"], rng, monotone_constraints=mc
+            ),
+        }
 
         for family, trainer in trainers.items():
             variant_name = f"{family}_{feature_set_name}"
@@ -294,6 +310,33 @@ def run_all_variants(seed: int = 42) -> dict:
                 f"test_auc={results[variant_name]['test_auc']:.4f}"
             )
 
+        # Ablation: for the "full" feature set, also train the tree models
+        # WITHOUT monotonic constraints, so the report can show whether
+        # imposing domain knowledge costs or helps predictive performance
+        # (not just whether it fixes the sanity-check failures).
+        if feature_set_name == "full":
+            for family in ("xgboost", "lightgbm"):
+                print(f"\n=== Training {family}_full (ablation: no monotonic constraints) ===")
+                trainer_fn = train_xgboost if family == "xgboost" else train_lightgbm
+                result = trainer_fn(
+                    X_train, y_train, X_val, y_val, cfg, seed, cfg["n_hyperparam_trials"], rng,
+                    monotone_constraints=None,
+                )
+                model = result["model"]
+                test_pred = model.predict_proba(X_test)[:, 1]
+                ext_pred = model.predict_proba(X_ext)[:, 1]
+                ablation_results[f"{family}_full_unconstrained"] = {
+                    "val_logloss": result["val_logloss"],
+                    "test_logloss": float(log_loss(y_test, test_pred)),
+                    "test_auc": float(roc_auc_score(y_test, test_pred)),
+                    "external_test_logloss": float(log_loss(y_ext, ext_pred)),
+                    "external_test_auc": float(roc_auc_score(y_ext, ext_pred)),
+                }
+                print(
+                    f"{family}_full_unconstrained: val_logloss={result['val_logloss']:.4f} "
+                    f"(constrained was {results[f'{family}_full']['val_logloss']:.4f})"
+                )
+
     # Pick the production model: best "full" variant by validation log-loss.
     full_variants = {k: v for k, v in results.items() if v["feature_set"] == "full"}
     best_variant_name = min(full_variants, key=lambda k: full_variants[k]["val_logloss"])
@@ -336,6 +379,8 @@ def run_all_variants(seed: int = 42) -> dict:
         print(f"Isotonic calibration improved ECE ({ece_raw:.4f} -> {ece_cal:.4f}); saved calibrated model.")
     else:
         print(f"Isotonic calibration did not improve ECE ({ece_raw:.4f} -> {ece_cal:.4f}); keeping raw model.")
+
+    results["_monotonic_constraints_ablation"] = ablation_results
 
     results["_dataset_info"] = {
         "la_liga_all_rows": splits["la_liga_all_rows"],

@@ -95,6 +95,73 @@ def shot_triangle(shooter: tuple[float, float]) -> tuple:
     return (shooter, LEFT_POST, RIGHT_POST)
 
 
+OBSTACLE_HALF_WIDTH_M = 0.25  # ~half a person's shoulder width
+
+
+def goal_shadow_interval(
+    shooter: tuple[float, float], obstacle: tuple[float, float]
+) -> tuple[float, float] | None:
+    """The y-interval (in StatsBomb y units, at x=GOAL_X) that `obstacle`
+    blocks as seen from `shooter` - i.e. its projected "shadow" on the goal
+    line, treating the obstacle as a body OBSTACLE_HALF_WIDTH_M*2 wide.
+
+    Returns None if the obstacle can't cast a shadow on the goal line at
+    all (it's behind or level with the shooter, so it isn't between the
+    shooter and the goal).
+    """
+    sx, sy = shooter
+    ox, oy = obstacle
+    if ox <= sx:
+        return None
+
+    t = (GOAL_X - sx) / (ox - sx)
+    if t <= 0:
+        return None
+
+    projected_y = sy + t * (oy - sy)
+    half_width_yd = (OBSTACLE_HALF_WIDTH_M / YARD_TO_M) * t
+    return (projected_y - half_width_yd, projected_y + half_width_yd)
+
+
+def goal_coverage_pct(
+    shooter: tuple[float, float], obstacles: list[tuple[float, float]]
+) -> float:
+    """Percentage (0-100) of the goal mouth width that is blocked by the
+    given obstacles (defenders/goalkeeper), as seen from the shooter.
+
+    Each obstacle casts a "shadow" (see goal_shadow_interval) on the goal
+    line; overlapping shadows are merged so a crowd of defenders standing
+    behind one another doesn't get double-counted.
+    """
+    intervals = []
+    for obstacle in obstacles:
+        shadow = goal_shadow_interval(shooter, obstacle)
+        if shadow is None:
+            continue
+        lo, hi = shadow
+        lo = max(lo, GOAL_Y_LEFT_POST)
+        hi = min(hi, GOAL_Y_RIGHT_POST)
+        if hi > lo:
+            intervals.append((lo, hi))
+
+    if not intervals:
+        return 0.0
+
+    intervals.sort()
+    merged_length = 0.0
+    cur_lo, cur_hi = intervals[0]
+    for lo, hi in intervals[1:]:
+        if lo <= cur_hi:
+            cur_hi = max(cur_hi, hi)
+        else:
+            merged_length += cur_hi - cur_lo
+            cur_lo, cur_hi = lo, hi
+    merged_length += cur_hi - cur_lo
+
+    goal_width = GOAL_Y_RIGHT_POST - GOAL_Y_LEFT_POST
+    return (merged_length / goal_width) * 100.0
+
+
 def deviation_from_shot_line_m(
     shooter: tuple[float, float], point: tuple[float, float]
 ) -> float:
