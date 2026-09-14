@@ -11,9 +11,9 @@ const GOAL_Y_LEFT = 36;
 const GOAL_Y_RIGHT = 44;
 const GOAL_WIDTH = GOAL_Y_RIGHT - GOAL_Y_LEFT;
 
-const VIEW_W = 640;
-const VIEW_H = 440;
-const PAD = 14;
+const VIEW_W = 960;
+const VIEW_H = 660;
+const PAD = 16;
 
 function toSvg(x: number, y: number): [number, number] {
   const sx = PAD + (x / PITCH_X_MAX) * (VIEW_W - 2 * PAD);
@@ -70,6 +70,15 @@ export default function Pitch({
   const rightSixYard = useMemo(() => box(114, 30, 120, 50), []);
   const leftBox = useMemo(() => box(0, 18, 18, 62), []);
   const leftSixYard = useMemo(() => box(0, 30, 6, 50), []);
+  const [rightPenSpotX, rightPenSpotY] = toSvg(108, 40);
+  const [leftPenSpotX, leftPenSpotY] = toSvg(12, 40);
+  const [rightArcX] = toSvg(102, 40);
+  const [leftArcX] = toSvg(18, 40);
+  // Penalty arc: radius = 10yd from the spot, drawn only where it pokes
+  // out past the box edge (the part actually visible on a real pitch).
+  const arcRadiusPx = (10 / PITCH_X_MAX) * (VIEW_W - 2 * PAD);
+  const arcDx = rightPenSpotX - rightArcX;
+  const arcHalfChord = Math.sqrt(Math.max(0, arcRadiusPx ** 2 - arcDx ** 2));
 
   function handlePointerDown(e: React.PointerEvent<SVGElement>, onMove: (x: number, y: number) => void) {
     const svg = svgRef.current;
@@ -98,7 +107,7 @@ export default function Pitch({
       ref={svgRef}
       viewBox={`0 0 ${VIEW_W} ${VIEW_H}`}
       width="100%"
-      style={{ maxWidth: 640, background: "#0e3b2a", borderRadius: 10, display: "block", touchAction: "none" }}
+      style={{ maxWidth: 960, width: "100%", background: "#0e3b2a", borderRadius: 10, display: "block", touchAction: "none" }}
     >
       {/* alternating mow stripes for a broadcast feel */}
       {Array.from({ length: 8 }).map((_, i) => (
@@ -119,8 +128,22 @@ export default function Pitch({
       {/* penalty areas, both ends, for pitch context */}
       <rect {...rightBox} fill="none" stroke="rgba(255,255,255,0.3)" strokeWidth={1.5} />
       <rect {...rightSixYard} fill="none" stroke="rgba(255,255,255,0.3)" strokeWidth={1.5} />
+      <circle cx={rightPenSpotX} cy={rightPenSpotY} r={4} fill="rgba(255,255,255,0.5)" />
+      <path
+        d={`M ${rightArcX} ${rightPenSpotY - arcHalfChord} A ${arcRadiusPx} ${arcRadiusPx} 0 0 0 ${rightArcX} ${rightPenSpotY + arcHalfChord}`}
+        fill="none"
+        stroke="rgba(255,255,255,0.3)"
+        strokeWidth={1.5}
+      />
       <rect {...leftBox} fill="none" stroke="rgba(255,255,255,0.18)" strokeWidth={1.5} />
       <rect {...leftSixYard} fill="none" stroke="rgba(255,255,255,0.18)" strokeWidth={1.5} />
+      <circle cx={leftPenSpotX} cy={leftPenSpotY} r={4} fill="rgba(255,255,255,0.3)" />
+      <path
+        d={`M ${leftArcX} ${leftPenSpotY - arcHalfChord} A ${arcRadiusPx} ${arcRadiusPx} 0 0 1 ${leftArcX} ${leftPenSpotY + arcHalfChord}`}
+        fill="none"
+        stroke="rgba(255,255,255,0.18)"
+        strokeWidth={1.5}
+      />
 
       {/* attacking goal, highlighted */}
       <line x1={leftPostX} y1={leftPostY} x2={rightPostX} y2={rightPostY} stroke="#fff" strokeWidth={5} strokeLinecap="round" />

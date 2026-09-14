@@ -242,6 +242,22 @@ nav button.active {
   align-items: flex-start;
 }
 
+.simulator-v2 {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.2rem;
+}
+
+.sim-pitch-wrap {
+  width: 100%;
+  max-width: 960px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  align-items: center;
+}
+
 .sim-pitch {
   display: flex;
   flex-direction: column;
@@ -298,8 +314,13 @@ nav button.active {
   display: flex;
   flex-direction: column;
   gap: 1rem;
-  min-width: 280px;
-  flex: 1;
+  width: 100%;
+  max-width: 960px;
+}
+
+.xg-hero {
+  align-items: center;
+  text-align: center;
 }
 
 .xg-hero {
@@ -332,7 +353,7 @@ nav button.active {
 
 .feature-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
   gap: 0.6rem;
 }
 

@@ -90,8 +90,8 @@ export default function Simulator() {
   const defendersOnly = players.filter((p) => !p.isGoalkeeper);
 
   return (
-    <div className="simulator">
-      <div className="sim-pitch">
+    <div className="simulator-v2">
+      <div className="sim-pitch-wrap">
         <Pitch
           shooter={shooter}
           players={players}
@@ -127,9 +127,8 @@ export default function Simulator() {
           <span className="xg-hero-sub">
             Sin mirar a los rivales daría {geo != null ? `${geo}%` : "…"}
           </span>
+          {loading && <span className="loading"> · recalculando…</span>}
         </div>
-
-        {loading && <span className="loading">recalculando…</span>}
 
         {prediction && (
           <div className="feature-grid">
