@@ -7,6 +7,7 @@ import type { Match, Shot, Player } from "../api";
 import HalfPitch from "../components/HalfPitch";
 import type { PitchPlayer } from "../components/HalfPitch";
 import ShotCard from "../components/ShotCard";
+import MatchTimeline from "../components/MatchTimeline";
 import PlayerAvatar from "../components/PlayerAvatar";
 import TeamBadge from "../components/TeamBadge";
 import XgMeter from "../components/XgMeter";
@@ -26,7 +27,10 @@ export default function MatchView() {
     api
       .shots(id)
       .then((s) => {
-        const sorted = [...s].sort((a, b) => Math.abs(b.xg_diff) - Math.abs(a.xg_diff));
+        // Chronological, so the list reads like the match actually
+        // unfolded instead of jumping to whichever shot had the biggest
+        // defender effect first.
+        const sorted = [...s].sort((a, b) => (a.period ?? 0) - (b.period ?? 0) || (a.minute ?? 0) - (b.minute ?? 0));
         setShots(sorted);
         setSelectedShotId(sorted[0]?.event_id ?? null);
       })
@@ -91,6 +95,8 @@ export default function MatchView() {
           <TeamBadge name={match.away_team} size={44} />
         </div>
       </motion.div>
+
+      <MatchTimeline match={match} shots={shots} selectedShotId={selectedShotId} onSelect={setSelectedShotId} />
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[320px_1fr]">
         <div className="flex max-h-[640px] flex-col gap-2 overflow-y-auto pr-1">

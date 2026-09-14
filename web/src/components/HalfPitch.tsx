@@ -7,6 +7,7 @@ import { motion } from "motion/react";
 import {
   GOAL_Y_LEFT,
   GOAL_Y_RIGHT,
+  HALF_X_MIN,
   PITCH_X_MAX,
   PITCH_Y_MAX,
   VIEW_H,
@@ -55,13 +56,12 @@ export default function HalfPitch({
   const box18 = useMemo(() => box(102, 18, 120, 62), []);
   const box6 = useMemo(() => box(114, 30, 120, 50), []);
   const [penSpotX, penSpotY] = toSvg(108, 40);
-  const [halfLineY] = toSvg(60, 0);
   // Penalty arc: a 10-yard circle around the spot, drawn as an ellipse in
   // SVG space since the pitch-x and pitch-y axes are scaled slightly
   // differently to fill the viewBox. Only the part poking out past the
   // box edge (x=102) is visible, same as on a real pitch.
   const pxPerYardX = (VIEW_W - 2 * PAD) / PITCH_Y_MAX;
-  const pxPerYardY = (VIEW_H - 2 * PAD) / (PITCH_X_MAX - 60);
+  const pxPerYardY = (VIEW_H - 2 * PAD) / (PITCH_X_MAX - HALF_X_MIN);
   const arcRx = 10 * pxPerYardX;
   const arcRy = 10 * pxPerYardY;
   const arcEdgeY = toSvg(102, 40)[1];
@@ -120,13 +120,6 @@ export default function HalfPitch({
       ))}
 
       <rect x={PAD} y={PAD} width={VIEW_W - 2 * PAD} height={VIEW_H - 2 * PAD} rx={10} fill="none" stroke="rgba(255,255,255,0.5)" strokeWidth={2.5} />
-      {/* halfway arc at the bottom edge of the visible half */}
-      <path
-        d={`M ${PAD + (VIEW_W - 2 * PAD) / 2 - 46} ${halfLineY} A 46 46 0 0 1 ${PAD + (VIEW_W - 2 * PAD) / 2 + 46} ${halfLineY}`}
-        fill="none"
-        stroke="rgba(255,255,255,0.4)"
-        strokeWidth={2}
-      />
 
       <rect {...box18} fill="none" stroke="rgba(255,255,255,0.55)" strokeWidth={2} />
       <rect {...box6} fill="none" stroke="rgba(255,255,255,0.55)" strokeWidth={2} />
@@ -138,21 +131,31 @@ export default function HalfPitch({
         strokeWidth={2}
       />
 
-      {/* goal + net */}
+      {/* goal + net — drawn with real visual weight (thick glowing posts,
+          a deep net) instead of a hairline, so it reads as a goal even at
+          a glance rather than disappearing at the top of the pitch. */}
       <g>
-        <rect x={leftPostX} y={goalY - 14} width={rightPostX - leftPostX} height={14} fill="none" stroke="rgba(255,255,255,0.35)" strokeWidth={1.5} />
-        {Array.from({ length: 6 }).map((_, i) => (
-          <line
-            key={i}
-            x1={leftPostX + ((rightPostX - leftPostX) * i) / 5}
-            y1={goalY - 14}
-            x2={leftPostX + ((rightPostX - leftPostX) * i) / 5}
-            y2={goalY}
-            stroke="rgba(255,255,255,0.2)"
-            strokeWidth={1}
-          />
-        ))}
-        <line x1={leftPostX} y1={goalY} x2={rightPostX} y2={goalY} stroke="#fff" strokeWidth={5} strokeLinecap="round" />
+        {(() => {
+          const netDepth = 30;
+          const postW = rightPostX - leftPostX;
+          return (
+            <>
+              <rect x={leftPostX} y={goalY - netDepth} width={postW} height={netDepth} fill="rgba(255,255,255,0.04)" stroke="rgba(255,255,255,0.45)" strokeWidth={2} />
+              {Array.from({ length: 7 }).map((_, i) => (
+                <line key={`v${i}`} x1={leftPostX + (postW * i) / 6} y1={goalY - netDepth} x2={leftPostX + (postW * i) / 6} y2={goalY} stroke="rgba(255,255,255,0.22)" strokeWidth={1} />
+              ))}
+              {Array.from({ length: 4 }).map((_, i) => (
+                <line key={`h${i}`} x1={leftPostX} y1={goalY - netDepth + (netDepth * (i + 1)) / 4} x2={rightPostX} y2={goalY - netDepth + (netDepth * (i + 1)) / 4} stroke="rgba(255,255,255,0.16)" strokeWidth={1} />
+              ))}
+              {/* posts */}
+              <line x1={leftPostX} y1={goalY - netDepth} x2={leftPostX} y2={goalY} stroke="#fff" strokeWidth={5} strokeLinecap="round" style={{ filter: "drop-shadow(0 0 5px rgba(255,255,255,0.6))" }} />
+              <line x1={rightPostX} y1={goalY - netDepth} x2={rightPostX} y2={goalY} stroke="#fff" strokeWidth={5} strokeLinecap="round" style={{ filter: "drop-shadow(0 0 5px rgba(255,255,255,0.6))" }} />
+              {/* crossbar + goal line, the two most important edges */}
+              <line x1={leftPostX} y1={goalY - netDepth} x2={rightPostX} y2={goalY - netDepth} stroke="#fff" strokeWidth={5} strokeLinecap="round" style={{ filter: "drop-shadow(0 0 5px rgba(255,255,255,0.6))" }} />
+              <line x1={leftPostX} y1={goalY} x2={rightPostX} y2={goalY} stroke="#fff" strokeWidth={6} strokeLinecap="round" style={{ filter: "drop-shadow(0 0 6px rgba(255,255,255,0.75))" }} />
+            </>
+          );
+        })()}
       </g>
 
       {goalCoveragePct != null && goalCoveragePct > 0 && (

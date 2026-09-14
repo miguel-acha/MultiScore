@@ -9,7 +9,11 @@
 // x=120, the goal line, maps to svgY=0, the top).
 export const PITCH_X_MAX = 120;
 export const PITCH_Y_MAX = 80;
-export const HALF_X_MIN = 60;
+// Cropped to the attacking 45 yards (not the full 60-yard half) so the
+// goal reads as a real goal instead of a hairline at the top of a long
+// pitch — StatsBomb shots below x=75 are under 0.4% of the data, so
+// almost nothing gets clamped off-screen by this.
+export const HALF_X_MIN = 75;
 
 export const GOAL_Y_LEFT = 36;
 export const GOAL_Y_RIGHT = 44;
