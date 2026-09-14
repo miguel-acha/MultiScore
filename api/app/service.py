@@ -40,6 +40,12 @@ class MultiScoreService:
             with open(players_path) as f:
                 self.player_photos = json.load(f)
 
+        teams_path = DATA_DIR / "teams.json"
+        self.teams: dict = {}
+        if teams_path.exists():
+            with open(teams_path) as f:
+                self.teams = json.load(f)
+
     # ---- live inference (simulator) -------------------------------------
     def predict(self, request) -> dict[str, Any]:
         shooter = (request.shooter_x, request.shooter_y)
@@ -130,18 +136,83 @@ class MultiScoreService:
             return None
         return rows.iloc[0].to_dict()
 
+    # A shot on target either scores or forces a save - it's the standard
+    # "shot accuracy" definition, distinct from "not blocked by a
+    # defender" (which StatsBomb tracks separately as "Blocked").
+    ON_TARGET_OUTCOMES = frozenset({"Goal", "Saved", "Saved to Post", "Saved Off Target"})
+
+    def _player_stats(self, rows: pd.DataFrame) -> dict:
+        n_shots = len(rows)
+        goals = int(rows["is_goal"].sum())
+        xg_total = float(rows["xg_full"].sum())
+        on_target = int(rows["shot_outcome"].isin(self.ON_TARGET_OUTCOMES).sum())
+        main_team = rows["team"].mode().iat[0] if n_shots else None
+        return {
+            "shots": n_shots,
+            "goals": goals,
+            "xg_total": xg_total,
+            "xg_per_shot": xg_total / n_shots if n_shots else 0.0,
+            "goals_minus_xg": goals - xg_total,
+            "on_target_pct": (on_target / n_shots * 100.0) if n_shots else 0.0,
+            "matches": int(rows["match_id"].nunique()),
+            "team": main_team,
+        }
+
+    def list_players(
+        self, q: str | None = None, competition_id: int | None = None, sort: str = "goals"
+    ) -> list[dict]:
+        rows = self.shots
+        if competition_id is not None:
+            rows = rows[rows["competition_id"] == competition_id]
+        rows = rows[rows["player_id"].notna()]
+
+        out = []
+        for player_id, group in rows.groupby("player_id"):
+            first = group.iloc[0]
+            name = first["player"]
+            nickname = first.get("player_nickname") or name
+            if q and q.lower() not in name.lower() and q.lower() not in str(nickname).lower():
+                continue
+            stats = self._player_stats(group)
+            out.append(
+                {
+                    "player_id": int(player_id),
+                    "name": name,
+                    "nickname": nickname,
+                    "photo": self.player_photos.get(str(int(player_id))),
+                    **stats,
+                }
+            )
+
+        sort_key = {
+            "goals": lambda p: (p["goals"], p["xg_total"]),
+            "xg": lambda p: p["xg_total"],
+            "shots": lambda p: p["shots"],
+            "overperf": lambda p: p["goals_minus_xg"],
+        }.get(sort, lambda p: (p["goals"], p["xg_total"]))
+        out.sort(key=sort_key, reverse=True)
+        return out
+
     def get_player(self, player_id: int) -> dict | None:
         rows = self.shots[self.shots["player_id"] == player_id]
         if rows.empty:
             return None
         row = rows.iloc[0]
         photo = self.player_photos.get(str(player_id))
+        outcomes = rows["shot_outcome"].value_counts().to_dict()
         return {
             "player_id": int(player_id),
             "name": row["player"],
             "nickname": row.get("player_nickname"),
+            "jersey_number": None if pd.isna(row.get("jersey_number")) else int(row["jersey_number"]),
             "photo": photo,
+            "stats": self._player_stats(rows),
+            "outcomes": outcomes,
+            "shots": self._serialize_shot_rows(rows.sort_values(["match_date", "period", "minute"])),
         }
+
+    def get_teams(self) -> dict:
+        return self.teams
 
     def get_shots(self, match_id: int) -> list[dict]:
         rows = self.shots[self.shots["match_id"] == match_id]

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link, useParams } from "react-router";
+import { Link, useParams, useSearchParams } from "react-router";
 import { motion } from "motion/react";
 import { ArrowLeft } from "lucide-react";
 import { api } from "../api";
@@ -11,9 +11,12 @@ import MatchTimeline from "../components/MatchTimeline";
 import PlayerAvatar from "../components/PlayerAvatar";
 import TeamBadge from "../components/TeamBadge";
 import XgMeter from "../components/XgMeter";
+import Skeleton from "../components/Skeleton";
+import { outcomeStyle } from "../lib/outcomes";
 
 export default function MatchView() {
   const { matchId } = useParams();
+  const [searchParams] = useSearchParams();
   const [match, setMatch] = useState<Match | null>(null);
   const [shots, setShots] = useState<Shot[]>([]);
   const [selectedShotId, setSelectedShotId] = useState<string | null>(null);
@@ -32,12 +35,22 @@ export default function MatchView() {
         // defender effect first.
         const sorted = [...s].sort((a, b) => (a.period ?? 0) - (b.period ?? 0) || (a.minute ?? 0) - (b.minute ?? 0));
         setShots(sorted);
-        setSelectedShotId(sorted[0]?.event_id ?? null);
+        // ?tiro=<event_id> lets a link from the player page jump straight
+        // to a specific shot; otherwise default to the first of the match.
+        const requested = searchParams.get("tiro");
+        const requestedExists = requested && sorted.some((s) => s.event_id === requested);
+        setSelectedShotId(requestedExists ? requested : sorted[0]?.event_id ?? null);
       })
       .catch((e) => setError(String(e)));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [matchId]);
 
   const selectedShot = useMemo(() => shots.find((s) => s.event_id === selectedShotId) ?? null, [shots, selectedShotId]);
+
+  function selectShot(eventId: string) {
+    setSelectedShotId(eventId);
+    document.querySelector(`[data-event-id="${eventId}"]`)?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+  }
 
   useEffect(() => {
     setShotPlayer(null);
@@ -58,7 +71,18 @@ export default function MatchView() {
   }, [selectedShot]);
 
   if (error) return <div className="text-(--color-rival)">Error: {error}</div>;
-  if (!match) return <p className="text-(--color-text-dim)">Cargando…</p>;
+  if (!match) {
+    return (
+      <div className="flex flex-col gap-6">
+        <Skeleton className="h-24 w-full" />
+        <Skeleton className="h-20 w-full" />
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-[320px_1fr]">
+          <Skeleton className="h-[500px] w-full" />
+          <Skeleton className="h-[500px] w-full" />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col gap-6">
@@ -78,7 +102,7 @@ export default function MatchView() {
         className="clip-menu flex items-center justify-between border border-(--color-border) bg-(--color-surface) p-5"
       >
         <div className="flex flex-1 items-center gap-3">
-          <TeamBadge name={match.home_team} size={44} />
+          <TeamBadge name={match.home_team} size="lg" />
           <div>
             <p className="font-medium">{match.home_team}</p>
             <p className="text-xs text-(--color-text-faint)">xG {match.home_xg_full.toFixed(2)}</p>
@@ -92,11 +116,11 @@ export default function MatchView() {
             <p className="font-medium">{match.away_team}</p>
             <p className="text-xs text-(--color-text-faint)">xG {match.away_xg_full.toFixed(2)}</p>
           </div>
-          <TeamBadge name={match.away_team} size={44} />
+          <TeamBadge name={match.away_team} size="lg" />
         </div>
       </motion.div>
 
-      <MatchTimeline match={match} shots={shots} selectedShotId={selectedShotId} onSelect={setSelectedShotId} />
+      <MatchTimeline match={match} shots={shots} selectedShotId={selectedShotId} onSelect={selectShot} />
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[320px_1fr]">
         <div className="flex max-h-[640px] flex-col gap-2 overflow-y-auto pr-1">
@@ -109,9 +133,19 @@ export default function MatchView() {
           {selectedShot ? (
             <>
               <div className="flex w-full items-center gap-3">
-                <PlayerAvatar player={shotPlayer} />
+                {shotPlayer ? (
+                  <PlayerAvatar player={shotPlayer} size="md" jerseyNumber={selectedShot.jersey_number} />
+                ) : (
+                  <Skeleton className="h-14 w-14" />
+                )}
                 <div>
-                  <strong>{selectedShot.player_nickname ?? selectedShot.player}</strong>
+                  {selectedShot.player_id != null ? (
+                    <Link to={`/jugador/${selectedShot.player_id}`} className="interactive font-semibold hover:text-(--color-lime)">
+                      {selectedShot.player_nickname ?? selectedShot.player}
+                    </Link>
+                  ) : (
+                    <strong>{selectedShot.player_nickname ?? selectedShot.player}</strong>
+                  )}
                   {selectedShot.jersey_number != null && <span className="ml-1 text-(--color-text-dim)">#{selectedShot.jersey_number}</span>}
                   <div className="text-sm text-(--color-text-dim)">
                     {selectedShot.team} · minuto {selectedShot.minute}
@@ -122,7 +156,7 @@ export default function MatchView() {
               <HalfPitch
                 shooter={{ x: selectedShot.loc_x, y: selectedShot.loc_y }}
                 players={pitchPlayers}
-                goalCoveragePct={selectedShot.goal_coverage_pct ?? undefined}
+                isGoal={selectedShot.is_goal === 1}
                 shotEnd={selectedShot.shot_end_x != null && selectedShot.shot_end_y != null ? { x: selectedShot.shot_end_x, y: selectedShot.shot_end_y } : null}
               />
 
@@ -133,7 +167,10 @@ export default function MatchView() {
               </div>
 
               <p className="text-center text-sm text-(--color-text-dim)">
-                {selectedShot.shot_body_part} · {selectedShot.shot_type} · resultado: {selectedShot.shot_outcome}
+                {selectedShot.shot_body_part} · {selectedShot.shot_type} · resultado:{" "}
+                <span style={{ color: outcomeStyle(selectedShot.shot_outcome, selectedShot.is_goal === 1).color }}>
+                  {outcomeStyle(selectedShot.shot_outcome, selectedShot.is_goal === 1).label}
+                </span>
               </p>
               {shotPlayer?.photo?.artist_html && (
                 <p

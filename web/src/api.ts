@@ -88,12 +88,47 @@ export interface PlayerPhoto {
   artist_html: string | null;
 }
 
-export interface Player {
+export interface PlayerStats {
+  shots: number;
+  goals: number;
+  xg_total: number;
+  xg_per_shot: number;
+  goals_minus_xg: number;
+  on_target_pct: number;
+  matches: number;
+  team: string | null;
+}
+
+export interface PlayerListItem extends PlayerStats {
   player_id: number;
   name: string;
   nickname: string | null;
   photo: PlayerPhoto | null;
 }
+
+export interface Player {
+  player_id: number;
+  name: string;
+  nickname: string | null;
+  jersey_number: number | null;
+  photo: PlayerPhoto | null;
+  stats: PlayerStats | null;
+  outcomes: Record<string, number> | null;
+  shots: Shot[] | null;
+}
+
+export type TeamSort = "goals" | "xg" | "shots" | "overperf";
+
+export interface TeamCrest {
+  kind: "club" | "national";
+  thumb_url: string | null;
+  license: string | null;
+  artist_html: string | null;
+  wikidata_id: string | null;
+  iso2: string | null;
+}
+
+export type TeamsMap = Record<string, TeamCrest | null>;
 
 export interface PredictRequestPlayer {
   x: number;
@@ -141,6 +176,15 @@ export const api = {
   match: (matchId: number) => request<Match>(`/matches/${matchId}`),
   shots: (matchId: number) => request<Shot[]>(`/matches/${matchId}/shots`),
   player: (playerId: number) => request<Player>(`/players/${playerId}`),
+  players: (opts?: { q?: string; competitionId?: number; sort?: TeamSort }) => {
+    const params = new URLSearchParams();
+    if (opts?.q) params.set("q", opts.q);
+    if (opts?.competitionId != null) params.set("competition_id", String(opts.competitionId));
+    if (opts?.sort) params.set("sort", opts.sort);
+    const qs = params.toString();
+    return request<PlayerListItem[]>(`/players${qs ? `?${qs}` : ""}`);
+  },
+  teams: () => request<TeamsMap>("/teams"),
   predict: (payload: PredictRequest) =>
     request<PredictResponse>("/predict", { method: "POST", body: JSON.stringify(payload) }),
   modelInfo: () => request<ModelInfo>("/model"),

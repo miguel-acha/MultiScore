@@ -134,7 +134,7 @@ export default function GoalOrNot() {
         </p>
       </div>
 
-      <HalfPitch shooter={{ x: shot.loc_x, y: shot.loc_y }} players={pitchPlayers} goalCoveragePct={phase === "revealed" ? shot.goal_coverage_pct ?? undefined : undefined} />
+      <HalfPitch shooter={{ x: shot.loc_x, y: shot.loc_y }} players={pitchPlayers} isGoal={phase === "revealed" && shot.is_goal === 1} />
 
       <div className="flex w-full max-w-xl flex-col items-center gap-4">
         <AnimatePresence mode="wait">

@@ -2,22 +2,25 @@
 // pitch and see xG-geo / xG-full update live via POST /predict.
 import { useEffect, useRef, useState } from "react";
 import { motion } from "motion/react";
-import { UserPlus, UserMinus, Footprints } from "lucide-react";
+import { UserPlus, UserMinus, Footprints, ZoomIn, ZoomOut } from "lucide-react";
 import { api } from "../api";
 import type { PredictResponse } from "../api";
 import HalfPitch from "../components/HalfPitch";
 import type { PitchPlayer } from "../components/HalfPitch";
+import { CAMERA_ATTACKING, CAMERA_BOX } from "../lib/pitch";
+import type { Camera } from "../lib/pitch";
 import XgMeter from "../components/XgMeter";
 import CountUp from "../components/bits/CountUp";
 
 let nextId = 1;
 const GK_ID = "gk";
 
-const PRESETS: Record<string, { shooter: { x: number; y: number }; players: PitchPlayer[] }> = {
-  "Arco vacío": { shooter: { x: 108, y: 40 }, players: [] },
+const PRESETS: Record<string, { shooter: { x: number; y: number }; players: PitchPlayer[]; camera: Camera }> = {
+  "Arco vacío": { shooter: { x: 108, y: 40 }, players: [], camera: CAMERA_BOX },
   "Mano a mano": {
     shooter: { x: 100, y: 40 },
     players: [{ id: GK_ID, x: 116, y: 40, teammate: false, isGoalkeeper: true, draggable: true }],
+    camera: CAMERA_BOX,
   },
   "Área llena": {
     shooter: { x: 98, y: 44 },
@@ -27,10 +30,12 @@ const PRESETS: Record<string, { shooter: { x: number; y: number }; players: Pitc
       { id: "d2", x: 106, y: 46, teammate: false, draggable: true },
       { id: "d3", x: 112, y: 42, teammate: false, draggable: true },
     ],
+    camera: CAMERA_BOX,
   },
   "Tiro lejano": {
     shooter: { x: 82, y: 40 },
     players: [{ id: GK_ID, x: 118, y: 40, teammate: false, isGoalkeeper: true, draggable: true }],
+    camera: CAMERA_ATTACKING,
   },
 };
 
@@ -40,6 +45,7 @@ export default function Simulator() {
     { id: GK_ID, x: 118, y: 40, teammate: false, isGoalkeeper: true, draggable: true },
   ]);
   const [bodyPart, setBodyPart] = useState<"Right Foot" | "Head">("Right Foot");
+  const [camera, setCamera] = useState<Camera>(CAMERA_BOX);
   const [prediction, setPrediction] = useState<PredictResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -104,6 +110,7 @@ export default function Simulator() {
     const preset = PRESETS[name];
     setShooter(preset.shooter);
     setPlayers(preset.players.map((p) => ({ ...p })));
+    setCamera(preset.camera);
     runPrediction(preset.shooter, preset.players);
   }
 
@@ -147,22 +154,30 @@ export default function Simulator() {
         ))}
       </div>
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_360px]">
-        <div className="flex flex-col items-center gap-4">
-          <HalfPitchWithDoubleClick
-            shooter={shooter}
-            players={players}
-            onShooterMove={handleShooterMove}
-            onPlayerMove={handlePlayerMove}
-            onPlayerDoubleClick={handlePlayerDoubleClick}
-            goalCoveragePct={prediction?.computed_features.goal_coverage_pct}
-          />
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
+        <div className="flex min-w-0 flex-col items-center gap-4">
+          <div className="relative w-full" style={{ maxWidth: 640 }}>
+            <HalfPitch
+              shooter={shooter}
+              players={players}
+              onShooterMove={handleShooterMove}
+              onPlayerMove={handlePlayerMove}
+              onPlayerDoubleClick={handlePlayerDoubleClick}
+              camera={camera}
+            />
+            <button
+              onClick={() => setCamera(camera === CAMERA_BOX ? CAMERA_ATTACKING : CAMERA_BOX)}
+              className="interactive clip-menu-sm absolute right-3 top-3 flex items-center gap-1.5 border border-(--color-border) bg-(--color-surface)/85 px-2.5 py-1.5 text-xs font-medium text-(--color-text-dim) backdrop-blur-sm hover:border-(--color-lime) hover:text-(--color-lime)"
+            >
+              {camera === CAMERA_BOX ? <ZoomOut size={14} /> : <ZoomIn size={14} />}
+              {camera === CAMERA_BOX ? "Media cancha" : "Zoom área"}
+            </button>
+          </div>
 
           <div className="flex flex-wrap items-center justify-center gap-4 text-xs text-(--color-text-dim)">
             <Legend color="var(--color-shooter)" label="Tirador" />
-            <Legend color="var(--color-rival)" label="Rival" />
+            <Legend color="var(--color-rival)" label="Rival / sombra sobre el arco" />
             <Legend color="var(--color-gk)" label="Arquero" />
-            <Legend color="#ff4d5e" label="Arco tapado" />
           </div>
 
           <div className="flex flex-wrap justify-center gap-2">
@@ -245,32 +260,6 @@ function Stat({ label, value }: { label: string; value: string }) {
     <div className="clip-menu-sm border border-(--color-border) bg-(--color-surface-2) px-3 py-2">
       <p className="text-[10px] text-(--color-text-faint)">{label}</p>
       <p className="text-stat text-lg">{value}</p>
-    </div>
-  );
-}
-
-// Wraps HalfPitch to also fire a double-click callback on a player circle
-// (the pitch itself only exposes pointer down/move/up for dragging).
-function HalfPitchWithDoubleClick({
-  onPlayerDoubleClick,
-  ...props
-}: React.ComponentProps<typeof HalfPitch> & { onPlayerDoubleClick: (id: string) => void }) {
-  const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    function handler(e: Event) {
-      const target = (e.target as Element).closest("circle[data-player-id]");
-      if (target) onPlayerDoubleClick(target.getAttribute("data-player-id")!);
-    }
-    el.addEventListener("dblclick", handler);
-    return () => el.removeEventListener("dblclick", handler);
-  }, [onPlayerDoubleClick]);
-
-  return (
-    <div ref={ref}>
-      <HalfPitch {...props} />
     </div>
   );
 }

@@ -132,7 +132,7 @@ export default function GuessXg() {
       <HalfPitch
         shooter={{ x: shot.loc_x, y: shot.loc_y }}
         players={pitchPlayers}
-        goalCoveragePct={phase === "revealed" ? shot.goal_coverage_pct ?? undefined : undefined}
+        isGoal={phase === "revealed" && shot.is_goal === 1}
       />
 
       <div className="relative flex w-full max-w-md flex-col items-center gap-4">

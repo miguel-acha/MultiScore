@@ -12,6 +12,8 @@ import ExploreMatches from "./pages/ExploreMatches";
 import MatchView from "./pages/MatchView";
 import Simulator from "./pages/Simulator";
 import Model from "./pages/Model";
+import Players from "./pages/Players";
+import PlayerView from "./pages/PlayerView";
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
@@ -25,6 +27,8 @@ createRoot(document.getElementById("root")!).render(
           <Route path="explorar" element={<ExploreCompetitions />} />
           <Route path="explorar/:competitionId/:seasonId" element={<ExploreMatches />} />
           <Route path="partido/:matchId" element={<MatchView />} />
+          <Route path="jugadores" element={<Players />} />
+          <Route path="jugador/:playerId" element={<PlayerView />} />
           <Route path="simulador" element={<Simulator />} />
           <Route path="modelo" element={<Model />} />
         </Route>

@@ -18,6 +18,7 @@ from pathlib import Path
 import joblib
 import pandas as pd
 
+from multiscore.crests import NATIONAL_TEAM_ISO, build_team_crests
 from multiscore.geometry import goal_coverage_pct
 from multiscore.metadata import build_lineups, build_match_metadata
 from multiscore.modeling import prepare_frame
@@ -43,7 +44,7 @@ def _shot_shadow_pct(row) -> float:
     return goal_coverage_pct(shooter, obstacles)
 
 
-def export_bundle(fetch_photos: bool = True) -> None:
+def export_bundle(fetch_photos: bool = True, fetch_crests: bool = True) -> None:
     API_DATA_DIR.mkdir(parents=True, exist_ok=True)
     API_MODELS_DIR.mkdir(parents=True, exist_ok=True)
 
@@ -191,8 +192,16 @@ def export_bundle(fetch_photos: bool = True) -> None:
     matches.to_parquet(API_DATA_DIR / "matches.parquet")
     print(f"Exported {len(matches)} matches -> {API_DATA_DIR / 'matches.parquet'}")
 
+    if fetch_crests:
+        all_teams = set(browsable["home_team"]) | set(browsable["away_team"])
+        club_names = sorted(t for t in all_teams if t not in NATIONAL_TEAM_ISO)
+        build_team_crests(club_names)
+
 
 if __name__ == "__main__":
     import sys
 
-    export_bundle(fetch_photos="--no-photos" not in sys.argv)
+    export_bundle(
+        fetch_photos="--no-photos" not in sys.argv,
+        fetch_crests="--no-crests" not in sys.argv,
+    )

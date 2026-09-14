@@ -1,11 +1,12 @@
 import { motion } from "motion/react";
-import { Home, Gamepad2, Compass, Sliders, LineChart } from "lucide-react";
+import { Home, Gamepad2, Compass, Sliders, LineChart, Users } from "lucide-react";
 import { NavLink } from "react-router";
 
 const ITEMS = [
   { to: "/", label: "Inicio", icon: Home },
   { to: "/jugar", label: "Jugar", icon: Gamepad2 },
   { to: "/explorar", label: "Explorar", icon: Compass },
+  { to: "/jugadores", label: "Jugadores", icon: Users },
   { to: "/simulador", label: "Simulador", icon: Sliders },
   { to: "/modelo", label: "Modelo", icon: LineChart },
 ];

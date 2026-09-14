@@ -5,6 +5,7 @@
 @import "@fontsource-variable/inter";
 @import "@fontsource/barlow-condensed/700.css";
 @import "@fontsource/barlow-condensed/800.css";
+@import "flag-icons/css/flag-icons.min.css";
 
 @theme {
   --font-sans: "Inter Variable", system-ui, -apple-system, sans-serif;
@@ -125,4 +126,35 @@ body {
 
 ::-webkit-scrollbar-thumb:hover {
   background: var(--color-border-strong);
+}
+
+/* Skeleton loading shimmer */
+.skeleton-shimmer {
+  position: relative;
+  overflow: hidden;
+}
+
+.skeleton-shimmer::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.06), transparent);
+  animation: shimmer 1.6s infinite;
+}
+
+@keyframes shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+/* Flag icons ship as a rectangular sprite by default; force them square to
+   match the club-crest badges they sit next to. */
+.fi.fi-square {
+  width: 1em;
+  height: 1em;
+  background-size: cover;
+  background-position: 50%;
+  border-radius: 3px;
 }

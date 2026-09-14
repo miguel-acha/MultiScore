@@ -1,48 +1,64 @@
-// Coordinate conversion for the vertical half-pitch. StatsBomb uses a
-// 120x80 pitch with the attacking direction toward x=120 (the right edge
-// in the raw data). We only ever show the attacking half (x in [60,120])
-// and draw it with the goal at the TOP of the screen, because that reads
-// as "shooting up the screen at goal" the way EA-style shot menus do.
-//
-// Mapping: svgX = y (StatsBomb y runs 0..80, left touchline to right
-// touchline as seen from behind the attacking goal), svgY = 120 - x (so
-// x=120, the goal line, maps to svgY=0, the top).
+// Coordinate conversion for the vertical half-pitch, driven by a "camera"
+// instead of a fixed crop - the SVG viewBox height is derived from the
+// camera's extent so px-per-yard is always the same on both axes (a
+// fixed-viewBox version was visibly stretched: the penalty arc rendered
+// as an ellipse, the goal was proportionally tiny). The goal is always at
+// the TOP of the screen: StatsBomb's attacking direction is x=120, and
+// svgY = (camera.xMax - x) * scale, so higher x (closer to goal) means a
+// smaller svgY.
 export const PITCH_X_MAX = 120;
 export const PITCH_Y_MAX = 80;
-// Cropped to the attacking 45 yards (not the full 60-yard half) so the
-// goal reads as a real goal instead of a hairline at the top of a long
-// pitch — StatsBomb shots below x=75 are under 0.4% of the data, so
-// almost nothing gets clamped off-screen by this.
-export const HALF_X_MIN = 75;
 
 export const GOAL_Y_LEFT = 36;
 export const GOAL_Y_RIGHT = 44;
 export const GOAL_WIDTH_YD = GOAL_Y_RIGHT - GOAL_Y_LEFT;
 
-// Viewbox for the half-pitch SVG: wide short rectangle, x in [0,80], y in
-// [0,60] (only the 60-yard attacking half, StatsBomb x in [60,120]).
-export const VIEW_W = 800;
-export const VIEW_H = 620;
-export const PAD = 18;
+export interface Camera {
+  xMin: number;
+  xMax: number;
+  yMin: number;
+  yMax: number;
+}
 
-export function toSvg(x: number, y: number): [number, number] {
-  const sx = PAD + (y / PITCH_Y_MAX) * (VIEW_W - 2 * PAD);
-  const sy = PAD + ((PITCH_X_MAX - x) / (PITCH_X_MAX - HALF_X_MIN)) * (VIEW_H - 2 * PAD);
+// "attacking": the whole attacking third-plus, full pitch width.
+export const CAMERA_ATTACKING: Camera = { xMin: 72, xMax: 120, yMin: 0, yMax: 80 };
+// "box": zoomed to the penalty area, so the goal reads as an actual goal.
+export const CAMERA_BOX: Camera = { xMin: 94, xMax: 120, yMin: 10, yMax: 70 };
+
+export const VIEW_W = 800;
+export const PAD = 20;
+
+export function pxPerYard(camera: Camera): number {
+  return (VIEW_W - 2 * PAD) / (camera.yMax - camera.yMin);
+}
+
+export function viewHeight(camera: Camera): number {
+  return 2 * PAD + pxPerYard(camera) * (camera.xMax - camera.xMin);
+}
+
+export function toSvg(x: number, y: number, camera: Camera): [number, number] {
+  const scale = pxPerYard(camera);
+  const sx = PAD + (y - camera.yMin) * scale;
+  const sy = PAD + (camera.xMax - x) * scale;
   return [sx, sy];
 }
 
-export function fromSvg(sx: number, sy: number): [number, number] {
-  const y = ((sx - PAD) / (VIEW_W - 2 * PAD)) * PITCH_Y_MAX;
-  const x = PITCH_X_MAX - ((sy - PAD) / (VIEW_H - 2 * PAD)) * (PITCH_X_MAX - HALF_X_MIN);
+export function fromSvg(sx: number, sy: number, camera: Camera): [number, number] {
+  const scale = pxPerYard(camera);
+  const y = camera.yMin + (sx - PAD) / scale;
+  const x = camera.xMax - (sy - PAD) / scale;
   return [x, y];
 }
 
-export function clampPitch(x: number, y: number): [number, number] {
-  return [Math.max(HALF_X_MIN, Math.min(PITCH_X_MAX, x)), Math.max(0, Math.min(PITCH_Y_MAX, y))];
+export function clampPitch(x: number, y: number, camera: Camera): [number, number] {
+  return [
+    Math.max(Math.max(0, camera.xMin), Math.min(Math.min(PITCH_X_MAX, camera.xMax), x)),
+    Math.max(Math.max(0, camera.yMin), Math.min(Math.min(PITCH_Y_MAX, camera.yMax), y)),
+  ];
 }
 
-export function box(x1: number, y1: number, x2: number, y2: number) {
-  const [sx1, sy1] = toSvg(x1, y1);
-  const [sx2, sy2] = toSvg(x2, y2);
+export function box(x1: number, y1: number, x2: number, y2: number, camera: Camera) {
+  const [sx1, sy1] = toSvg(x1, y1, camera);
+  const [sx2, sy2] = toSvg(x2, y2, camera);
   return { x: Math.min(sx1, sx2), y: Math.min(sy1, sy2), width: Math.abs(sx2 - sx1), height: Math.abs(sy2 - sy1) };
 }

@@ -187,3 +187,51 @@ def test_challenge_shots_balanced_has_goals_and_misses(client):
 def test_challenge_shots_rejects_out_of_range_n(client):
     resp = client.get("/challenge/shots?n=999")
     assert resp.status_code == 422
+
+
+def test_players_sorted_by_goals_descending(client):
+    resp = client.get("/players?sort=goals")
+    assert resp.status_code == 200
+    players = resp.json()
+    assert len(players) > 100
+    goals = [p["goals"] for p in players]
+    assert goals == sorted(goals, reverse=True)
+
+
+def test_players_goal_total_matches_shots_data(client):
+    import pandas as pd
+
+    players = client.get("/players").json()
+    shots = pd.read_parquet(API_DATA_DIR / "shots.parquet")
+    assert sum(p["goals"] for p in players) == int(shots["is_goal"].sum())
+
+
+def test_players_search_filters_by_name(client):
+    resp = client.get("/players?q=messi")
+    players = resp.json()
+    assert len(players) == 1
+    assert players[0]["nickname"] == "Lionel Messi"
+
+
+def test_player_detail_includes_stats_and_shots(client):
+    players = client.get("/players?sort=goals").json()
+    top_scorer_id = players[0]["player_id"]
+
+    resp = client.get(f"/players/{top_scorer_id}")
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["stats"]["goals"] == players[0]["goals"]
+    assert body["stats"]["shots"] == players[0]["shots"]
+    assert len(body["shots"]) == players[0]["shots"]
+    assert body["outcomes"]["Goal"] == players[0]["goals"]
+
+
+def test_teams_covers_every_team_seen_in_matches(client):
+    matches = client.get("/competitions/43/matches").json()
+    resp = client.get("/teams")
+    assert resp.status_code == 200
+    teams = resp.json()
+    all_team_names = {m["home_team"] for m in matches} | {m["away_team"] for m in matches}
+    assert all_team_names.issubset(teams.keys())
+    # World Cup teams are all national sides with a flag, never a club crest
+    assert all(teams[name]["kind"] == "national" for name in all_team_names)

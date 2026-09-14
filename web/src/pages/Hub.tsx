@@ -1,6 +1,6 @@
 import { motion } from "motion/react";
 import { Link } from "react-router";
-import { Gamepad2, Compass, Sliders, LineChart, ArrowRight } from "lucide-react";
+import { Gamepad2, Compass, Sliders, LineChart, Users, ArrowRight } from "lucide-react";
 import CountUp from "../components/bits/CountUp";
 import SpotlightCard from "../components/bits/SpotlightCard";
 
@@ -17,6 +17,12 @@ const TILES = [
     title: "EXPLORAR PARTIDOS",
     subtitle: "La Liga 2017/18 y Mundial 2022",
     icon: Compass,
+  },
+  {
+    to: "/jugadores",
+    title: "JUGADORES",
+    subtitle: "Rankings, fotos y mapa de tiros de cada uno",
+    icon: Users,
   },
   {
     to: "/simulador",

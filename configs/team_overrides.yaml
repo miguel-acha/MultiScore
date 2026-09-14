@@ -1,0 +1,10 @@
+# Manual overrides for ml/multiscore/crests.py, keyed by the team name as
+# it appears in the browsable data (e.g. "Real Madrid", "Athletic Club").
+#
+#   "<team name>": "<wikidata_qid>"   # force a specific Wikidata match
+#   "<team name>": "skip"             # never look this club up; always
+#                                      # show the initials badge
+#
+# Use this when the automatic Wikidata search picks the wrong entity (a
+# non-football item with a similar name) or fails to find a club that does
+# have a Commons logo under a different spelling.

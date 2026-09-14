@@ -111,11 +111,42 @@ class PlayerPhotoOut(BaseModel):
     artist_html: str | None = None
 
 
-class PlayerOut(BaseModel):
+class PlayerStatsOut(BaseModel):
+    shots: int
+    goals: int
+    xg_total: float
+    xg_per_shot: float
+    goals_minus_xg: float
+    on_target_pct: float
+    matches: int
+    team: str | None = None
+
+
+class PlayerListItemOut(PlayerStatsOut):
     player_id: int
     name: str
     nickname: str | None = None
     photo: PlayerPhotoOut | None = None
+
+
+class PlayerOut(BaseModel):
+    player_id: int
+    name: str
+    nickname: str | None = None
+    jersey_number: int | None = None
+    photo: PlayerPhotoOut | None = None
+    stats: PlayerStatsOut | None = None
+    outcomes: dict[str, int] | None = None
+    shots: list[ShotOut] | None = None
+
+
+class TeamCrestOut(BaseModel):
+    kind: str
+    thumb_url: str | None = None
+    license: str | None = None
+    artist_html: str | None = None
+    wikidata_id: str | None = None
+    iso2: str | None = None
 
 
 class HealthOut(BaseModel):

@@ -26,6 +26,38 @@ export function nameHue(name: string): number {
   return h;
 }
 
+const POSITION_ABBR: Record<string, string> = {
+  Goalkeeper: "GK",
+  "Right Back": "RB",
+  "Right Center Back": "RCB",
+  "Center Back": "CB",
+  "Left Center Back": "LCB",
+  "Left Back": "LB",
+  "Right Wing Back": "RWB",
+  "Left Wing Back": "LWB",
+  "Right Defensive Midfield": "RDM",
+  "Center Defensive Midfield": "CDM",
+  "Left Defensive Midfield": "LDM",
+  "Right Midfield": "RM",
+  "Right Center Midfield": "RCM",
+  "Center Midfield": "CM",
+  "Left Center Midfield": "LCM",
+  "Left Midfield": "LM",
+  "Right Attacking Midfield": "RAM",
+  "Center Attacking Midfield": "CAM",
+  "Left Attacking Midfield": "LAM",
+  "Right Wing": "RW",
+  "Right Center Forward": "RCF",
+  "Center Forward": "CF",
+  "Left Center Forward": "LCF",
+  "Left Wing": "LW",
+};
+
+export function positionAbbr(position: string | null | undefined): string | null {
+  if (!position) return null;
+  return POSITION_ABBR[position] ?? null;
+}
+
 export function formatDate(iso: string | null): string {
   if (!iso) return "";
   const d = new Date(iso);

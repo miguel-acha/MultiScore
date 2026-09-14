@@ -3,6 +3,7 @@ import { motion } from "motion/react";
 import { Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { api } from "../api";
 import type { ModelInfo } from "../api";
+import Skeleton from "../components/Skeleton";
 
 export default function Model() {
   const [info, setInfo] = useState<ModelInfo | null>(null);
@@ -13,7 +14,19 @@ export default function Model() {
   }, []);
 
   if (error) return <div className="text-(--color-rival)">Error: {error}</div>;
-  if (!info) return <p className="text-(--color-text-dim)">Cargando…</p>;
+  if (!info) {
+    return (
+      <div className="flex flex-col gap-8">
+        <Skeleton className="h-10 w-64" />
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <Skeleton className="h-24 w-full" />
+          <Skeleton className="h-24 w-full" />
+        </div>
+        <Skeleton className="h-72 w-full" />
+        <Skeleton className="h-64 w-full" />
+      </div>
+    );
+  }
 
   const rows = Object.entries(info.metrics).map(([name, m]: [string, any]) => ({ name, ...m }));
   const chartData = rows.map((r) => ({

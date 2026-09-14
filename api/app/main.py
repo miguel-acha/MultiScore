@@ -17,10 +17,12 @@ from app.schemas import (
     HealthOut,
     MatchOut,
     ModelInfoOut,
+    PlayerListItemOut,
     PlayerOut,
     PredictRequest,
     PredictResponse,
     ShotOut,
+    TeamCrestOut,
 )
 from app.service import MultiScoreService
 
@@ -91,12 +93,24 @@ def shots(match_id: int):
     return [_clean_nan(r) for r in rows]
 
 
+@app.get("/players", response_model=list[PlayerListItemOut])
+def players(q: str | None = None, competition_id: int | None = None, sort: str = "goals"):
+    if sort not in {"goals", "xg", "shots", "overperf"}:
+        raise HTTPException(status_code=422, detail="sort must be one of: goals, xg, shots, overperf")
+    return [_clean_nan(r) for r in service.list_players(q=q, competition_id=competition_id, sort=sort)]
+
+
 @app.get("/players/{player_id}", response_model=PlayerOut)
 def player_detail(player_id: int):
     row = service.get_player(player_id)
     if row is None:
         raise HTTPException(status_code=404, detail="Player not found")
     return _clean_nan(row)
+
+
+@app.get("/teams", response_model=dict[str, TeamCrestOut | None])
+def teams():
+    return service.get_teams()
 
 
 @app.get("/challenge/shots", response_model=list[ChallengeShotOut])
