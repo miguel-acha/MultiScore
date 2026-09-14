@@ -146,7 +146,10 @@ export default function MatchTimeline({ match, shots, selectedShotId, onSelect }
           const isHome = s.team === match.home_team;
           const style = outcomeStyle(s.shot_outcome, s.is_goal === 1);
           const isSelected = s.event_id === selectedShotId;
-          const size = style.shape === "ball" ? 14 + Math.min(1, s.xg_full) * 6 : 6 + Math.min(1, s.xg_full) * 3;
+          // Goals scale a lot more dramatically with xG than other outcomes -
+          // a near-certain tap-in goal should read as a big, unmissable
+          // ball, not the same size as a 0.02 xG speculative effort.
+          const size = style.shape === "ball" ? 18 + Math.min(1, s.xg_full) * 14 : 6 + Math.min(1, s.xg_full) * 4;
           const leftPct = Math.min(100, ((s.minute ?? 0) / maxMinute) * 100);
           return (
             <button
@@ -188,7 +191,7 @@ export default function MatchTimeline({ match, shots, selectedShotId, onSelect }
       <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 border-t border-(--color-border) pt-3 text-[11px] text-(--color-text-faint)">
         {OUTCOME_LEGEND.map((style) => (
           <span key={style.kind} className="flex items-center gap-1.5">
-            <OutcomeMarker style={style} size={style.shape === "ball" ? 14 : 9} />
+            <OutcomeMarker style={style} size={style.shape === "ball" ? 18 : 9} />
             {style.label}
           </span>
         ))}

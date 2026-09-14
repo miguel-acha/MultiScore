@@ -49,7 +49,11 @@ export default function PlayerShotMap({ shots }: { shots: Shot[] }) {
       {shots.map((s, i) => {
         const [sx, sy] = toSvg(s.loc_x, s.loc_y, camera);
         const style = outcomeStyle(s.shot_outcome, s.is_goal === 1);
-        const size = (style.shape === "ball" ? 9 : 5) + Math.min(1, s.xg_full) * (style.shape === "ball" ? 6 : 3);
+        // Goals scale a lot more with xG than other outcomes, and start
+        // bigger - hundreds of shots plotted together were reading as an
+        // undifferentiated speckle; a big, classic ball for the high-value
+        // moments (goals) is what should pop out of that noise.
+        const size = (style.shape === "ball" ? 13 : 5) + Math.min(1, s.xg_full) * (style.shape === "ball" ? 15 : 4);
         return (
           <motion.g
             key={s.event_id}
