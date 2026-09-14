@@ -10,8 +10,8 @@
     "test_auc": 0.7837643990231612,
     "external_test_logloss": 0.5448390614231863,
     "external_test_auc": 0.7948145745819948,
-    "fit_time_s": 0.025310993194580078,
-    "inference_time_ms_per_shot": 0.0003638267517089844,
+    "fit_time_s": 0.02590799331665039,
+    "inference_time_ms_per_shot": 0.00021219253540039062,
     "best_iteration": null,
     "n_train": 14613,
     "n_train_real": 14613,
@@ -36,8 +36,8 @@
     "test_auc": 0.7889583408094616,
     "external_test_logloss": 0.27591225504875183,
     "external_test_auc": 0.8007937978749691,
-    "fit_time_s": 0.14135313034057617,
-    "inference_time_ms_per_shot": 0.0005316734313964844,
+    "fit_time_s": 0.14085984230041504,
+    "inference_time_ms_per_shot": 0.0005002021789550781,
     "best_iteration": 79,
     "n_train": 14613,
     "n_train_real": 14613,
@@ -63,8 +63,8 @@
     "test_auc": 0.787165958716662,
     "external_test_logloss": 0.2742690301123613,
     "external_test_auc": 0.8027808664854624,
-    "fit_time_s": 0.17655086517333984,
-    "inference_time_ms_per_shot": 0.0008435249328613281,
+    "fit_time_s": 0.17641901969909668,
+    "inference_time_ms_per_shot": 0.0007138252258300781,
     "best_iteration": 54,
     "n_train": 14613,
     "n_train_real": 14613,
@@ -77,15 +77,15 @@
     "family": "logistic_regression",
     "feature_set": "full",
     "best_params": {
-      "C": 0.1
+      "C": 0.01
     },
-    "val_logloss": 0.41864080030936435,
-    "test_logloss": 0.4254372346863313,
-    "test_auc": 0.8046464058867191,
-    "external_test_logloss": 0.39745320692363934,
-    "external_test_auc": 0.8228008401284903,
-    "fit_time_s": 0.0935370922088623,
-    "inference_time_ms_per_shot": 0.00023794174194335938,
+    "val_logloss": 0.4237521148678179,
+    "test_logloss": 0.4310775321429893,
+    "test_auc": 0.8045359165796289,
+    "external_test_logloss": 0.4061841588021717,
+    "external_test_auc": 0.8201496993657854,
+    "fit_time_s": 0.07792401313781738,
+    "inference_time_ms_per_shot": 0.00013828277587890625,
     "best_iteration": null,
     "n_train": 15413,
     "n_train_real": 14613,
@@ -98,21 +98,21 @@
     "family": "xgboost",
     "feature_set": "full",
     "best_params": {
-      "learning_rate": 0.03,
+      "learning_rate": 0.05,
       "max_depth": 5,
-      "subsample": 0.8,
-      "colsample_bytree": 1.0,
-      "min_child_weight": 10,
-      "reg_lambda": 1.0
+      "subsample": 0.6,
+      "colsample_bytree": 0.8,
+      "min_child_weight": 5,
+      "reg_lambda": 0.0
     },
-    "val_logloss": 0.27532464265823364,
-    "test_logloss": 0.29044854640960693,
-    "test_auc": 0.8109131327401538,
-    "external_test_logloss": 0.2621084451675415,
-    "external_test_auc": 0.8240311753562309,
-    "fit_time_s": 0.4183781147003174,
-    "inference_time_ms_per_shot": 0.0006580352783203125,
-    "best_iteration": 185,
+    "val_logloss": 0.27550846338272095,
+    "test_logloss": 0.2897087335586548,
+    "test_auc": 0.812646964943726,
+    "external_test_logloss": 0.2648387849330902,
+    "external_test_auc": 0.8175011325261512,
+    "fit_time_s": 0.2654128074645996,
+    "inference_time_ms_per_shot": 0.0005397796630859375,
+    "best_iteration": 93,
     "n_train": 15413,
     "n_train_real": 14613,
     "n_train_synthetic": 800,
@@ -127,19 +127,19 @@
       "learning_rate": 0.1,
       "num_leaves": 63,
       "max_depth": -1,
-      "subsample": 0.6,
-      "colsample_bytree": 0.6,
+      "subsample": 1.0,
+      "colsample_bytree": 0.8,
       "min_child_samples": 10,
-      "reg_lambda": 5.0
+      "reg_lambda": 1.0
     },
-    "val_logloss": 0.27557035392896756,
-    "test_logloss": 0.2901694156443461,
-    "test_auc": 0.8101869252431236,
-    "external_test_logloss": 0.26289808945309473,
-    "external_test_auc": 0.8225048389753726,
-    "fit_time_s": 0.45759105682373047,
-    "inference_time_ms_per_shot": 0.0011138916015625,
-    "best_iteration": 49,
+    "val_logloss": 0.2760639678162404,
+    "test_logloss": 0.29047881341236764,
+    "test_auc": 0.8109032170331071,
+    "external_test_logloss": 0.26599795529616715,
+    "external_test_auc": 0.8173338275265628,
+    "fit_time_s": 0.5855789184570312,
+    "inference_time_ms_per_shot": 0.0009255409240722656,
+    "best_iteration": 38,
     "n_train": 15413,
     "n_train_real": 14613,
     "n_train_synthetic": 800,
@@ -149,48 +149,48 @@
   },
   "_selected_production_model": "xgboost_full",
   "_calibration": {
-    "ece_raw": 0.01306342860707867,
-    "ece_calibrated": 0.0201648182151713,
+    "ece_raw": 0.011673547585811515,
+    "ece_calibrated": 0.012498371150600556,
     "evaluated_on": "test split (calibrator fit on validation only, to avoid an optimistic in-sample ECE)",
     "calibration_applied": false
   },
   "_monotonic_constraints_ablation": {
     "xgboost_full_unconstrained": {
-      "val_logloss": 0.2750973701477051,
-      "test_logloss": 0.2923294007778168,
-      "test_auc": 0.8078534288514967,
-      "external_test_logloss": 0.26368916034698486,
-      "external_test_auc": 0.8192076435219504
+      "val_logloss": 0.2747267186641693,
+      "test_logloss": 0.2908555567264557,
+      "test_auc": 0.8106411590611621,
+      "external_test_logloss": 0.26418501138687134,
+      "external_test_auc": 0.8194753315212915
     },
     "lightgbm_full_unconstrained": {
-      "val_logloss": 0.27442683572544785,
-      "test_logloss": 0.29069929876799205,
-      "test_auc": 0.8099536700392661,
-      "external_test_logloss": 0.262830721843692,
-      "external_test_auc": 0.8205435095955851
+      "val_logloss": 0.2740860387099087,
+      "test_logloss": 0.29161964374808974,
+      "test_auc": 0.8089285748012609,
+      "external_test_logloss": 0.2649138762529124,
+      "external_test_auc": 0.8171176179886336
     }
   },
   "_synthetic_augmentation_ablation": {
     "logistic_regression_full_no_synthetic": {
-      "val_logloss": 0.5308759012192965,
-      "test_logloss": 0.5299403593181327,
-      "test_auc": 0.807685334008231,
-      "external_test_logloss": 0.504349855544794,
-      "external_test_auc": 0.8243966724322545
+      "val_logloss": 0.5293922400187246,
+      "test_logloss": 0.5282758728104857,
+      "test_auc": 0.8088223350829047,
+      "external_test_logloss": 0.503656996132718,
+      "external_test_auc": 0.8232847376657606
     },
     "xgboost_full_no_synthetic": {
-      "val_logloss": 0.27494245767593384,
-      "test_logloss": 0.29137885570526123,
-      "test_auc": 0.8083336323784664,
-      "external_test_logloss": 0.2611422538757324,
-      "external_test_auc": 0.8251019273535953
+      "val_logloss": 0.27532872557640076,
+      "test_logloss": 0.2890116274356842,
+      "test_auc": 0.8142802235472545,
+      "external_test_logloss": 0.2653827667236328,
+      "external_test_auc": 0.8165873898360926
     },
     "lightgbm_full_no_synthetic": {
-      "val_logloss": 0.27555487682563307,
-      "test_logloss": 0.2913067672638427,
-      "test_auc": 0.807806211198894,
-      "external_test_logloss": 0.2628019854936945,
-      "external_test_auc": 0.8234649122807018
+      "val_logloss": 0.2760694724455726,
+      "test_logloss": 0.28944283314958424,
+      "test_auc": 0.811523184811781,
+      "external_test_logloss": 0.2639720057280683,
+      "external_test_auc": 0.8195576970595503
     }
   },
   "_dataset_info": {
@@ -206,6 +206,8 @@
       "sigma_foot_deg": 6,
       "sigma_head_deg": 12,
       "mishit": 0.05,
+      "head_power_start_m": 8,
+      "head_power_decay_m": 4,
       "note": "Added to the 'full' model's TRAINING split only (soft-labeled via sample_weight, see multiscore/synthetic.py); val/test/external_test are always 100% real shots."
     }
   }

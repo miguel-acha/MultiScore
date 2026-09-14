@@ -8,6 +8,7 @@ import { Link } from "react-router";
 import { motion, AnimatePresence } from "motion/react";
 import { CAMERA_ATTACKING, GOAL_Y_LEFT, GOAL_Y_RIGHT, PAD, PITCH_X_MAX, VIEW_W, box, pxPerYard, toSvg, viewHeight } from "../lib/pitch";
 import { outcomeStyle } from "../lib/outcomes";
+import OutcomeMarker from "./OutcomeMarker";
 import type { Shot } from "../api";
 
 export default function PlayerShotMap({ shots }: { shots: Shot[] }) {
@@ -48,24 +49,19 @@ export default function PlayerShotMap({ shots }: { shots: Shot[] }) {
       {shots.map((s, i) => {
         const [sx, sy] = toSvg(s.loc_x, s.loc_y, camera);
         const style = outcomeStyle(s.shot_outcome, s.is_goal === 1);
-        const r = 3.5 + Math.min(1, s.xg_full) * 6;
+        const size = (style.shape === "ball" ? 9 : 5) + Math.min(1, s.xg_full) * (style.shape === "ball" ? 6 : 3);
         return (
-          <motion.circle
+          <motion.g
             key={s.event_id}
-            cx={sx}
-            cy={sy}
-            r={r}
-            fill={style.shape === "ring" ? "transparent" : style.color}
-            stroke={style.color}
-            strokeWidth={style.shape === "ring" ? 1.5 : 1}
-            opacity={0.9}
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
             transition={{ delay: Math.min(i * 0.008, 0.6), type: "spring", stiffness: 300, damping: 20 }}
-            style={{ cursor: "pointer" }}
+            style={{ cursor: "pointer", transformOrigin: `${sx}px ${sy}px` }}
             onMouseEnter={() => setHoverId(s.event_id)}
             onMouseLeave={() => setHoverId((h) => (h === s.event_id ? null : h))}
-          />
+          >
+            <OutcomeMarker style={style} size={size} x={sx} y={sy} />
+          </motion.g>
         );
       })}
 

@@ -75,7 +75,9 @@ class MultiScoreService:
         )
 
         geo_feats = geo_features_from_row(row)
-        defender_feats = defender_features_from_freeze_frame(shooter, freeze_frame)
+        defender_feats = defender_features_from_freeze_frame(
+            shooter, freeze_frame, is_head=request.shot_body_part == "Head"
+        )
         all_feats = {**geo_feats, **defender_feats}
         feat_df = pd.DataFrame([all_feats])
 

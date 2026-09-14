@@ -1,8 +1,11 @@
+import { useEffect, useState } from "react";
 import { motion } from "motion/react";
 import { Link } from "react-router";
 import { Gamepad2, Compass, Sliders, LineChart, Users, ArrowRight } from "lucide-react";
 import CountUp from "../components/bits/CountUp";
 import SpotlightCard from "../components/bits/SpotlightCard";
+
+const HERO_BG_URL = "/images/hero-bg.webp";
 
 const TILES = [
   {
@@ -45,31 +48,57 @@ const STATS = [
 ];
 
 export default function Hub() {
+  // The hero background is optional (the user generates it separately -
+  // see the prompt in the write-up). Probe for it once instead of always
+  // pointing background-image at a URL that 404s and leaves the hero
+  // blank - a missing image on a plain <img> falls back gracefully, but
+  // background-image doesn't, so it has to be conditional on a real load.
+  const [heroBgLoaded, setHeroBgLoaded] = useState(false);
+  useEffect(() => {
+    const img = new Image();
+    img.onload = () => setHeroBgLoaded(true);
+    img.src = HERO_BG_URL;
+  }, []);
+
   return (
     <div className="flex flex-col gap-10">
       <motion.div
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4 }}
-        className="bg-noise clip-menu relative overflow-hidden border border-(--color-border) bg-gradient-to-br from-(--color-surface-2) to-(--color-surface) p-8 sm:p-12"
+        className="bg-noise clip-menu relative overflow-hidden border border-(--color-border) bg-gradient-to-br from-(--color-surface-2) to-(--color-surface) bg-cover bg-center p-8 sm:p-12"
+        style={heroBgLoaded ? { backgroundImage: `linear-gradient(90deg, rgba(11,13,16,0.92), rgba(11,13,16,0.55)), url(${HERO_BG_URL})` } : undefined}
       >
-        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-(--color-lime)">Predicción de xG</p>
-        <h1 className="font-display mt-2 text-5xl leading-[0.95] sm:text-7xl">
-          ¿Ese tiro
-          <br />
-          era <span className="text-(--color-lime)">gol</span>?
-        </h1>
-        <p className="mt-4 max-w-lg text-(--color-text-dim)">
-          Machine learning entrenado con datos reales de StatsBomb que lee la posición de los defensores para
-          calcular la probabilidad de gol de cualquier disparo.
-        </p>
-        <div className="mt-6 flex flex-wrap gap-6">
-          {STATS.map((s) => (
-            <div key={s.label}>
-              <CountUp value={s.value} decimals={s.decimals} suffix={s.suffix ?? ""} className="font-display text-3xl text-(--color-lime)" />
-              <p className="text-xs text-(--color-text-faint)">{s.label}</p>
+        <div className="flex flex-col items-start gap-8 lg:flex-row lg:items-center lg:justify-between">
+          <div className="min-w-0">
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-(--color-lime)">Predicción de xG</p>
+            <h1 className="font-display mt-2 whitespace-nowrap text-4xl leading-[0.95] sm:text-6xl lg:text-7xl">
+              ¿Ese tiro era <span className="text-(--color-lime)">gol</span>?
+            </h1>
+            <p className="mt-4 max-w-lg text-(--color-text-dim)">
+              Machine learning entrenado con datos reales de StatsBomb que lee la posición de los defensores para
+              calcular la probabilidad de gol de cualquier disparo.
+            </p>
+            <div className="mt-6 flex flex-wrap gap-6">
+              {STATS.map((s) => (
+                <div key={s.label}>
+                  <CountUp value={s.value} decimals={s.decimals} suffix={s.suffix ?? ""} className="font-display text-3xl text-(--color-lime)" />
+                  <p className="text-xs text-(--color-text-faint)">{s.label}</p>
+                </div>
+              ))}
             </div>
-          ))}
+          </div>
+
+          <div className="relative hidden shrink-0 lg:block">
+            <div className="absolute inset-0 rounded-full bg-(--color-lime)/20 blur-3xl" />
+            <motion.img
+              src="/images/logo-badge.png"
+              alt=""
+              className="relative h-48 w-48 drop-shadow-(--shadow-glow-lime)"
+              whileHover={{ rotate: 8 }}
+              transition={{ type: "spring", stiffness: 200, damping: 12 }}
+            />
+          </div>
         </div>
       </motion.div>
 

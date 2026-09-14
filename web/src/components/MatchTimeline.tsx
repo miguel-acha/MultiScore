@@ -1,16 +1,17 @@
 // Horizontal timeline of every shot in the match, positioned by minute.
 // Marker shape+color tells you the RESULT (lib/outcomes.ts - a goal is a
-// lime ball, a save is a yellow circle, a block is a red square, etc.)
+// lime ball, a save is a small yellow dot, a block is a red square, etc.)
 // while the TEAM is read from the lane (home above the line, away below)
 // and the crest at that lane's end - the old version colored markers by
 // team, which read as "red = missed" to a first-time viewer since red
 // also meant "rival" everywhere else.
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import type { Match, Shot } from "../api";
 import TeamBadge from "./TeamBadge";
 import PlayerAvatar from "./PlayerAvatar";
+import OutcomeMarker from "./OutcomeMarker";
 import { outcomeStyle, OUTCOME_LEGEND } from "../lib/outcomes";
 
 interface MatchTimelineProps {
@@ -20,21 +21,25 @@ interface MatchTimelineProps {
   onSelect: (eventId: string) => void;
 }
 
-function Marker({ style, size }: { style: ReturnType<typeof outcomeStyle>; size: number }) {
-  const common = { width: size, height: size, background: style.color };
-  if (style.shape === "square") return <span className="block" style={{ ...common, borderRadius: 2 }} />;
-  if (style.shape === "ring")
-    return <span className="block rounded-full border-2" style={{ width: size, height: size, borderColor: style.color, background: "transparent" }} />;
-  return <span className="block rounded-full" style={common} />;
-}
-
 export default function MatchTimeline({ match, shots, selectedShotId, onSelect }: MatchTimelineProps) {
   const [hoverId, setHoverId] = useState<string | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const maxMinute = Math.max(90, ...shots.map((s) => s.minute ?? 0)) + 2;
   const sorted = useMemo(() => [...shots].sort((a, b) => (a.minute ?? 0) - (b.minute ?? 0)), [shots]);
-  const hovered = sorted.find((s) => s.event_id === hoverId);
   const selectedIndex = sorted.findIndex((s) => s.event_id === selectedShotId);
+  // The info strip shows whichever shot is hovered, falling back to the
+  // selected one - a small delay on leaving hover keeps it from flickering
+  // between neighboring markers on the way to a different one.
+  const [displayedId, setDisplayedId] = useState<string | null>(selectedShotId);
+  useEffect(() => {
+    if (hoverId) {
+      setDisplayedId(hoverId);
+      return;
+    }
+    const t = setTimeout(() => setDisplayedId(selectedShotId), 80);
+    return () => clearTimeout(t);
+  }, [hoverId, selectedShotId]);
+  const displayed = sorted.find((s) => s.event_id === displayedId);
 
   function step(delta: number) {
     if (sorted.length === 0) return;
@@ -87,6 +92,40 @@ export default function MatchTimeline({ match, shots, selectedShotId, onSelect }
         </div>
       </div>
 
+      {/* Fixed-height info strip: shows the hovered (or else selected)
+          shot above the bar, instead of a floating tooltip that used to
+          cover the very markers you're trying to read nearby. */}
+      <div className="mb-2 flex h-14 items-center gap-2.5 clip-menu-sm border border-(--color-border) bg-(--color-surface-2) px-3">
+        <AnimatePresence mode="wait">
+          {displayed ? (
+            <motion.div
+              key={displayed.event_id}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.12 }}
+              className="flex w-full items-center gap-2.5 text-xs"
+            >
+              <PlayerAvatar photoUrl={displayed.player_photo_url} name={displayed.player_nickname ?? displayed.player ?? ""} size="sm" />
+              <div className="min-w-0 flex-1">
+                <p className="truncate font-medium">{displayed.player_nickname ?? displayed.player}</p>
+                <p className="flex items-center gap-1 text-(--color-text-faint)">
+                  <TeamBadge name={displayed.team ?? ""} size="sm" />
+                  {displayed.minute}&apos;
+                </p>
+              </div>
+              <span className="flex items-center gap-1.5 text-(--color-text-dim)">
+                <OutcomeMarker style={outcomeStyle(displayed.shot_outcome, displayed.is_goal === 1)} size={16} />
+                {outcomeStyle(displayed.shot_outcome, displayed.is_goal === 1).label}
+              </span>
+              <span className="shrink-0 text-(--color-lime)">xG MultiScore {displayed.xg_full.toFixed(2)}</span>
+            </motion.div>
+          ) : (
+            <p className="text-xs text-(--color-text-faint)">Pasá el mouse o usá ← → para recorrer los tiros.</p>
+          )}
+        </AnimatePresence>
+      </div>
+
       <div className="relative h-20">
         <div className="absolute left-0 right-0 top-1/2 h-px -translate-y-1/2 bg-(--color-border-strong)" />
         {minuteMarks.map((m) => (
@@ -107,7 +146,7 @@ export default function MatchTimeline({ match, shots, selectedShotId, onSelect }
           const isHome = s.team === match.home_team;
           const style = outcomeStyle(s.shot_outcome, s.is_goal === 1);
           const isSelected = s.event_id === selectedShotId;
-          const size = 6 + Math.min(1, s.xg_full) * 9;
+          const size = style.shape === "ball" ? 14 + Math.min(1, s.xg_full) * 6 : 6 + Math.min(1, s.xg_full) * 3;
           const leftPct = Math.min(100, ((s.minute ?? 0) / maxMinute) * 100);
           return (
             <button
@@ -128,42 +167,17 @@ export default function MatchTimeline({ match, shots, selectedShotId, onSelect }
             >
               {isSelected && (
                 <motion.span
-                  layoutId="timeline-selected-ring"
+                  key={s.event_id}
                   className="absolute inset-0 rounded-full border-2 border-(--color-lime)"
-                  animate={{ scale: [1, 1.25, 1], opacity: [0.9, 0.3, 0.9] }}
-                  transition={{ duration: 1.6, repeat: Infinity, ease: "easeInOut" }}
+                  initial={{ scale: 1.6, opacity: 0.9 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  transition={{ duration: 0.25, ease: "easeOut" }}
                 />
               )}
-              <Marker style={style} size={size} />
+              <OutcomeMarker style={style} size={size} />
             </button>
           );
         })}
-
-        <AnimatePresence>
-          {hovered && (
-            <motion.div
-              initial={{ opacity: 0, y: 4, scale: 0.96 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.12 }}
-              className="clip-menu-sm pointer-events-none absolute z-10 flex -translate-x-1/2 items-center gap-2 border border-(--color-border-strong) bg-(--color-surface-2) px-3 py-2 text-xs shadow-(--shadow-card)"
-              style={{
-                left: `${Math.min(88, Math.max(12, ((hovered.minute ?? 0) / maxMinute) * 100))}%`,
-                top: hovered.team === match.home_team ? "-16px" : "auto",
-                bottom: hovered.team === match.home_team ? "auto" : "-16px",
-                transform: hovered.team === match.home_team ? "translate(-50%, -100%)" : "translate(-50%, 100%)",
-              }}
-            >
-              <PlayerAvatar photoUrl={hovered.player_photo_url} name={hovered.player_nickname ?? hovered.player ?? ""} size="sm" />
-              <div className="whitespace-nowrap">
-                <p className="font-medium">{hovered.player_nickname ?? hovered.player}</p>
-                <p className="text-(--color-text-faint)">
-                  {hovered.minute}&apos; · {outcomeStyle(hovered.shot_outcome, hovered.is_goal === 1).label} · xG MultiScore {hovered.xg_full.toFixed(2)}
-                </p>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
       </div>
 
       <div className="mb-3 flex items-center gap-2 text-sm font-medium">
@@ -174,7 +188,7 @@ export default function MatchTimeline({ match, shots, selectedShotId, onSelect }
       <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 border-t border-(--color-border) pt-3 text-[11px] text-(--color-text-faint)">
         {OUTCOME_LEGEND.map((style) => (
           <span key={style.kind} className="flex items-center gap-1.5">
-            <Marker style={style} size={9} />
+            <OutcomeMarker style={style} size={style.shape === "ball" ? 14 : 9} />
             {style.label}
           </span>
         ))}

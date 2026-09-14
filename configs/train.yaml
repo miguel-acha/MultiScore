@@ -74,3 +74,8 @@ synthetic_empty_net:
   sigma_foot_deg: 6 # angular shooting error std-dev, feet, StatsBomb degrees
   sigma_head_deg: 12
   mishit: 0.05 # fraction of clean-look shots that are mishit regardless of angle
+  head_power_start_m: 8 # headers beyond this distance start losing scoring
+    # probability to power/accuracy limits on top of the angular term -
+    # inside this range a header is basically a normal close-range chance.
+  head_power_decay_m: 4 # e-folding distance for that falloff: ~11m -> 0.47x,
+    # ~16.5m -> 0.10x, ~22m -> 0.02x of the pure-angle probability.

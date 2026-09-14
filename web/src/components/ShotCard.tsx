@@ -3,6 +3,7 @@ import { Link } from "react-router";
 import type { Shot } from "../api";
 import { outcomeStyle } from "../lib/outcomes";
 import PlayerAvatar from "./PlayerAvatar";
+import OutcomeMarker from "./OutcomeMarker";
 
 export default function ShotCard({
   shot,
@@ -49,10 +50,8 @@ export default function ShotCard({
         </div>
         <span className="text-xs text-(--color-text-dim)">xG MultiScore {shot.xg_full.toFixed(2)}</span>
       </div>
-      <span
-        className="shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold"
-        style={{ color: style.shape === "ring" ? style.color : "#07090d", background: style.shape === "ring" ? "transparent" : style.color, border: style.shape === "ring" ? `1.5px solid ${style.color}` : "none" }}
-      >
+      <span className="flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold text-(--color-text-dim)">
+        <OutcomeMarker style={style} size={style.shape === "ball" ? 14 : 10} />
         {style.label}
       </span>
     </motion.div>

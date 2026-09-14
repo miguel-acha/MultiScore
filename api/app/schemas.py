@@ -108,6 +108,7 @@ class CompetitionOut(BaseModel):
 
 class PlayerPhotoOut(BaseModel):
     thumb_url: str
+    thumb_url_lg: str | None = None
     license: str | None = None
     artist_html: str | None = None
 

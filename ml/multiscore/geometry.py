@@ -99,11 +99,13 @@ OBSTACLE_HALF_WIDTH_M = 0.25  # ~half a person's shoulder width
 
 
 def goal_shadow_interval(
-    shooter: tuple[float, float], obstacle: tuple[float, float]
+    shooter: tuple[float, float],
+    obstacle: tuple[float, float],
+    half_width_m: float = OBSTACLE_HALF_WIDTH_M,
 ) -> tuple[float, float] | None:
     """The y-interval (in StatsBomb y units, at x=GOAL_X) that `obstacle`
     blocks as seen from `shooter` - i.e. its projected "shadow" on the goal
-    line, treating the obstacle as a body OBSTACLE_HALF_WIDTH_M*2 wide.
+    line, treating the obstacle as a body `half_width_m`*2 wide.
 
     Returns None if the obstacle can't cast a shadow on the goal line at
     all (it's behind or level with the shooter, so it isn't between the
@@ -119,8 +121,62 @@ def goal_shadow_interval(
         return None
 
     projected_y = sy + t * (oy - sy)
-    half_width_yd = (OBSTACLE_HALF_WIDTH_M / YARD_TO_M) * t
+    half_width_yd = (half_width_m / YARD_TO_M) * t
     return (projected_y - half_width_yd, projected_y + half_width_yd)
+
+
+# A standing goalkeeper's body blocks a fixed ~0.25m like any other
+# obstacle, but that's only true the instant the ball arrives - by the
+# time a real shot reaches the keeper they've had time to react and dive,
+# covering far more of the goal than their standing width. That reaction
+# window is bigger the longer the ball takes to arrive, so a slow header
+# lets a keeper who started "beaten" get across in time, while a fast
+# first-time strike does not. This is why "GK on the six-yard line, 21m
+# header" and "GK on the six-yard line, 21m half-volley" have very
+# different real save rates even though the geometric freeze-frame
+# snapshot looks identical.
+BALL_SPEED_FOOT_MPS = 25.0
+BALL_SPEED_HEAD_MPS = 12.0
+GK_STANDING_REACH_M = 1.0
+GK_DIVE_SPEED_MPS = 4.5
+GK_REACTION_S = 0.2
+GK_MAX_REACH_M = 3.0
+
+
+def gk_reach_m(shooter: tuple[float, float], goalkeeper: tuple[float, float], is_head: bool) -> float:
+    """How far (metres, to each side) the goalkeeper can realistically
+    cover by the time the ball arrives, given how much time the shot's
+    flight time gives them to react and dive from their current position.
+    """
+    ball_speed = BALL_SPEED_HEAD_MPS if is_head else BALL_SPEED_FOOT_MPS
+    flight_time_s = distance_m(shooter, goalkeeper) / ball_speed
+    dive_time_s = max(0.0, flight_time_s - GK_REACTION_S)
+    reach = GK_STANDING_REACH_M + GK_DIVE_SPEED_MPS * dive_time_s
+    return min(reach, GK_MAX_REACH_M)
+
+
+def gk_reach_coverage_pct(
+    shooter: tuple[float, float],
+    goalkeeper: tuple[float, float] | None,
+    is_head: bool,
+) -> float:
+    """Percentage (0-100) of the goal mouth width the goalkeeper alone can
+    reach in time, independent of defenders - see `gk_reach_m`. 0 if there
+    is no goalkeeper in the freeze frame.
+    """
+    if goalkeeper is None:
+        return 0.0
+    reach = gk_reach_m(shooter, goalkeeper, is_head)
+    shadow = goal_shadow_interval(shooter, goalkeeper, half_width_m=reach)
+    if shadow is None:
+        return 0.0
+    lo, hi = shadow
+    lo = max(lo, GOAL_Y_LEFT_POST)
+    hi = min(hi, GOAL_Y_RIGHT_POST)
+    if hi <= lo:
+        return 0.0
+    goal_width = GOAL_Y_RIGHT_POST - GOAL_Y_LEFT_POST
+    return ((hi - lo) / goal_width) * 100.0
 
 
 def goal_coverage_pct(

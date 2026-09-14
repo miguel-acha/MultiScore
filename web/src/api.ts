@@ -85,6 +85,7 @@ export interface Shot {
 
 export interface PlayerPhoto {
   thumb_url: string;
+  thumb_url_lg: string | null;
   license: string | null;
   artist_html: string | null;
 }

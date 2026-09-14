@@ -8,6 +8,7 @@ import { api } from "../api";
 import type { ChallengeShot } from "../api";
 import HalfPitch from "../components/HalfPitch";
 import type { PitchPlayer } from "../components/HalfPitch";
+import LogoSpinner from "../components/LogoSpinner";
 import CountUp from "../components/bits/CountUp";
 import { useClickSpark, ClickSparkLayer } from "../components/bits/ClickSpark";
 import { finishGame, recordRound } from "../lib/progress";
@@ -92,7 +93,7 @@ export default function GuessXg() {
   }
 
   if (phase === "error") return <div className="text-(--color-rival)">Error: {error}</div>;
-  if (phase === "loading" || !shot) return <p className="text-(--color-text-dim)">Cargando disparos…</p>;
+  if (phase === "loading" || !shot) return <LogoSpinner label="Cargando disparos…" />;
 
   if (phase === "finished") {
     const total = scores.reduce((a, b) => a + b, 0);

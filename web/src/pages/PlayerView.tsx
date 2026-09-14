@@ -10,6 +10,7 @@ import PlayerShotMap from "../components/PlayerShotMap";
 import Skeleton from "../components/Skeleton";
 import CountUp from "../components/bits/CountUp";
 import { outcomeStyle, OUTCOME_LEGEND } from "../lib/outcomes";
+import OutcomeMarker from "../components/OutcomeMarker";
 
 export default function PlayerView() {
   const { playerId } = useParams();
@@ -73,7 +74,7 @@ export default function PlayerView() {
           <div className="flex flex-wrap justify-center gap-x-4 gap-y-1 text-[11px] text-(--color-text-faint)">
             {OUTCOME_LEGEND.map((s) => (
               <span key={s.kind} className="flex items-center gap-1.5">
-                <span className="inline-block h-2 w-2 rounded-full" style={{ background: s.shape === "ring" ? "transparent" : s.color, border: s.shape === "ring" ? `1.5px solid ${s.color}` : "none" }} />
+                <OutcomeMarker style={s} size={s.shape === "ball" ? 14 : 9} />
                 {s.label}
               </span>
             ))}
@@ -104,7 +105,10 @@ export default function PlayerView() {
                   className="interactive clip-menu-sm flex items-center justify-between border border-(--color-border) bg-(--color-surface-2) px-3 py-2 text-xs hover:border-(--color-lime)/50"
                 >
                   <span>{s.team} · {s.minute}&apos;</span>
-                  <span style={{ color: style.color }}>{style.label}</span>
+                  <span className="flex items-center gap-1" style={{ color: style.color }}>
+                    <OutcomeMarker style={style} size={style.shape === "ball" ? 14 : 10} />
+                    {style.label}
+                  </span>
                   <span className="text-(--color-text-dim)">xG {s.xg_full.toFixed(2)}</span>
                 </Link>
               );

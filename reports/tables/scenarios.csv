@@ -1,0 +1,13 @@
+scenario,distance_m,body_part,xg_model,real_bin,real_bin_goal_rate
+Arco vacío 11m,11.0,Right Foot,0.906,"foot, 9-12m",0.214
+Arco vacío 16.5m,16.5,Right Foot,0.86,"foot, 16.5-20m",0.077
+Arco vacío 25m,25.0,Right Foot,0.757,"foot, 20-40m",0.027
+Cabezazo arco vacío 11m,11.0,Head,0.453,"cabeza, 9-12m",0.067
+Cabezazo arco vacío 22m,22.0,Head,0.195,"cabeza, 20-40m",0.0
+"Arquero en la línea, 12.9m",12.9,Right Foot,0.261,"foot, 12-16.5m",0.151
+"Cabezazo, arquero en la línea, 12.9m",12.9,Head,0.08,"cabeza, 12-16.5m",0.037
+"Arquero en el área chica, 20.9m",20.9,Right Foot,0.169,"foot, 16.5-20m",0.077
+"Cabezazo, arquero en el área chica, 20.9m",20.9,Head,0.057,"cabeza, 16.5-20m",0.033
+"Arquero corrido + 2 defensores, cabezazo 12.9m",12.9,Head,0.214,"cabeza, 12-16.5m",0.037
+"Arquero fuera de posición, 12m",12.0,Right Foot,0.708,"foot, 9-12m",0.214
+"6 rivales en la línea, 14.9m",14.9,Right Foot,0.195,"foot, 12-16.5m",0.151

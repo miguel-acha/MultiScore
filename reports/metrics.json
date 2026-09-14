@@ -65,7 +65,7 @@
       "best_params": {
         "C": 1.0
       },
-      "fit_time_s": 0.031957149505615234,
+      "fit_time_s": 0.02590799331665039,
       "inference_time_ms_per_shot": 0.00021219253540039062
     },
     "xgboost_geo": {
@@ -138,8 +138,8 @@
         "min_child_weight": 1,
         "reg_lambda": 0.0
       },
-      "fit_time_s": 0.10856509208679199,
-      "inference_time_ms_per_shot": 0.0004100799560546875
+      "fit_time_s": 0.14085984230041504,
+      "inference_time_ms_per_shot": 0.0005002021789550781
     },
     "lightgbm_geo": {
       "la_liga_test": {
@@ -212,223 +212,223 @@
         "min_child_samples": 20,
         "reg_lambda": 0.0
       },
-      "fit_time_s": 0.17484498023986816,
-      "inference_time_ms_per_shot": 0.0009241104125976562
+      "fit_time_s": 0.17641901969909668,
+      "inference_time_ms_per_shot": 0.0007138252258300781
     },
     "logistic_regression_full": {
       "la_liga_test": {
-        "log_loss": 0.5299403593181327,
-        "brier_score": 0.17521079683383445,
-        "roc_auc": 0.807685334008231,
-        "ece": 0.2666771990016132,
+        "log_loss": 0.4310775321429893,
+        "brier_score": 0.1352721172024386,
+        "roc_auc": 0.8045359165796289,
+        "ece": 0.19432503771104864,
         "at_threshold_0.5": {
           "threshold": 0.5,
-          "accuracy": 0.749133312322723,
+          "accuracy": 0.8143712574850299,
           "confusion_matrix": {
-            "tn": 2109,
-            "fp": 685,
-            "fn": 111,
-            "tp": 268
+            "tn": 2378,
+            "fp": 416,
+            "fn": 173,
+            "tp": 206
           },
-          "precision_goal_class": 0.2812172088142707,
-          "recall_goal_class": 0.7071240105540897,
-          "f1_goal_class": 0.4024024024024024,
-          "precision_macro": 0.6156086044071354,
-          "recall_macro": 0.7309778964724636,
-          "f1_macro": 0.6218234588797014,
-          "precision_micro": 0.749133312322723,
-          "recall_micro": 0.749133312322723,
-          "f1_micro": 0.749133312322723,
-          "precision_weighted": 0.8701170255722056,
-          "recall_weighted": 0.749133312322723,
-          "f1_weighted": 0.7888268787954521
+          "precision_goal_class": 0.3311897106109325,
+          "recall_goal_class": 0.5435356200527705,
+          "f1_goal_class": 0.4115884115884116,
+          "precision_macro": 0.6316865840392961,
+          "recall_macro": 0.6973225702268147,
+          "f1_macro": 0.6506959831562263,
+          "precision_micro": 0.8143712574850299,
+          "recall_micro": 0.8143712574850299,
+          "f1_micro": 0.8143712574850299,
+          "precision_weighted": 0.8603975671245461,
+          "recall_weighted": 0.8143712574850299,
+          "f1_weighted": 0.8326829939776171
         },
         "at_best_f1_threshold": {
-          "threshold": 0.7008964488100222,
-          "accuracy": 0.8537661519067129,
+          "threshold": 0.6292148587107632,
+          "accuracy": 0.8619602899464229,
           "confusion_matrix": {
-            "tn": 2535,
-            "fp": 259,
-            "fn": 205,
-            "tp": 174
+            "tn": 2574,
+            "fp": 220,
+            "fn": 218,
+            "tp": 161
           },
-          "precision_goal_class": 0.4018475750577367,
-          "recall_goal_class": 0.45910290237467016,
-          "f1_goal_class": 0.42857142857142855,
-          "precision_macro": 0.6635150284047808,
-          "recall_macro": 0.6832021312159678,
-          "f1_macro": 0.6723630543652228,
-          "precision_micro": 0.8537661519067129,
-          "recall_micro": 0.8537661519067129,
-          "f1_micro": 0.8537661519067129,
-          "precision_weighted": 0.8626725764139554,
-          "recall_weighted": 0.8537661519067129,
-          "f1_weighted": 0.8579151427018169
+          "precision_goal_class": 0.4225721784776903,
+          "recall_goal_class": 0.42480211081794195,
+          "f1_goal_class": 0.4236842105263158,
+          "precision_macro": 0.6722459746256646,
+          "recall_macro": 0.6730309766688135,
+          "f1_macro": 0.6726369495166488,
+          "precision_micro": 0.8619602899464229,
+          "recall_micro": 0.8619602899464229,
+          "f1_micro": 0.8619602899464229,
+          "precision_weighted": 0.8622750378772746,
+          "recall_weighted": 0.8619602899464229,
+          "f1_weighted": 0.8621172094163191
         }
       },
       "world_cup_2022_external_test": {
-        "log_loss": 0.504349855544794,
-        "brier_score": 0.16522817880818413,
-        "roc_auc": 0.8243966724322545,
-        "ece": 0.2666500369772798
+        "log_loss": 0.4061841588021717,
+        "brier_score": 0.1249241437598385,
+        "roc_auc": 0.8201496993657854,
+        "ece": 0.1951020901692267
       },
       "generalization_gap": {
-        "logloss_val_to_test": -0.0009355419011638499,
-        "logloss_test_to_external": -0.025590503773338713,
-        "auc_test_to_external": 0.016711338424023503
+        "logloss_val_to_test": 0.007325417275171386,
+        "logloss_test_to_external": -0.024893373340817593,
+        "auc_test_to_external": 0.01561378278615655
       },
       "best_params": {
-        "C": 10.0
+        "C": 0.01
       },
-      "fit_time_s": 0.08917713165283203,
-      "inference_time_ms_per_shot": 0.00013017654418945312
+      "fit_time_s": 0.07792401313781738,
+      "inference_time_ms_per_shot": 0.00013828277587890625
     },
     "xgboost_full": {
       "la_liga_test": {
-        "log_loss": 0.2917800545692444,
-        "brier_score": 0.08537529408931732,
-        "roc_auc": 0.8078241539068831,
-        "ece": 0.015268509066935183,
+        "log_loss": 0.2897087335586548,
+        "brier_score": 0.08507668226957321,
+        "roc_auc": 0.812646964943726,
+        "ece": 0.011673547585811515,
         "at_threshold_0.5": {
           "threshold": 0.5,
-          "accuracy": 0.8963126378821304,
+          "accuracy": 0.8944216829498897,
           "confusion_matrix": {
-            "tn": 2763,
-            "fp": 31,
+            "tn": 2757,
+            "fp": 37,
             "fn": 298,
             "tp": 81
           },
-          "precision_goal_class": 0.7232142857142857,
+          "precision_goal_class": 0.6864406779661016,
           "recall_goal_class": 0.21372031662269128,
-          "f1_goal_class": 0.329938900203666,
-          "precision_macro": 0.8129302398842582,
-          "recall_macro": 0.6013125563070507,
-          "f1_macro": 0.6368738053537544,
-          "precision_micro": 0.8963126378821304,
-          "recall_micro": 0.8963126378821304,
-          "f1_micro": 0.8963126378821304,
-          "precision_weighted": 0.8812138923647131,
-          "recall_weighted": 0.8963126378821304,
-          "f1_weighted": 0.870484834643847
+          "f1_goal_class": 0.32595573440643866,
+          "precision_macro": 0.7944478348913978,
+          "recall_macro": 0.6002388268868646,
+          "f1_macro": 0.6343404932931492,
+          "precision_micro": 0.8944216829498897,
+          "recall_micro": 0.8944216829498897,
+          "f1_micro": 0.8944216829498897,
+          "precision_weighted": 0.8766530929987378,
+          "recall_weighted": 0.8944216829498897,
+          "f1_weighted": 0.8690550198331449
         },
         "at_best_f1_threshold": {
-          "threshold": 0.2261650413274765,
-          "accuracy": 0.8417901040025213,
+          "threshold": 0.24157769978046417,
+          "accuracy": 0.8543964702174598,
           "confusion_matrix": {
-            "tn": 2485,
-            "fp": 309,
-            "fn": 193,
-            "tp": 186
+            "tn": 2531,
+            "fp": 263,
+            "fn": 199,
+            "tp": 180
           },
-          "precision_goal_class": 0.37575757575757573,
-          "recall_goal_class": 0.49076517150395776,
-          "f1_goal_class": 0.425629290617849,
-          "precision_macro": 0.6518444338832688,
-          "recall_macro": 0.690085520612394,
-          "f1_macro": 0.6669447622679888,
-          "precision_micro": 0.8417901040025213,
-          "recall_micro": 0.8417901040025213,
-          "f1_micro": 0.8417901040025213,
-          "precision_weighted": 0.861976725838374,
-          "recall_weighted": 0.8417901040025213,
-          "f1_weighted": 0.8506122265084829
+          "precision_goal_class": 0.40632054176072235,
+          "recall_goal_class": 0.47493403693931396,
+          "f1_goal_class": 0.43795620437956206,
+          "precision_macro": 0.6667133844334747,
+          "recall_macro": 0.6904018788848324,
+          "f1_macro": 0.6771605786561098,
+          "precision_micro": 0.8543964702174598,
+          "recall_micro": 0.8543964702174598,
+          "f1_micro": 0.8543964702174598,
+          "precision_weighted": 0.864900814327801,
+          "recall_weighted": 0.8543964702174598,
+          "f1_weighted": 0.8592212669252124
         }
       },
       "world_cup_2022_external_test": {
-        "log_loss": 0.2626834809780121,
-        "brier_score": 0.07530930638313293,
-        "roc_auc": 0.8238510007412898,
-        "ece": 0.021531640819006867
+        "log_loss": 0.2648387849330902,
+        "brier_score": 0.07577867060899734,
+        "roc_auc": 0.8175011325261512,
+        "ece": 0.014232277666980571
       },
       "generalization_gap": {
-        "logloss_val_to_test": 0.017222493886947632,
-        "logloss_test_to_external": -0.0290965735912323,
-        "auc_test_to_external": 0.016026846834406694
+        "logloss_val_to_test": 0.014200270175933838,
+        "logloss_test_to_external": -0.024869948625564575,
+        "auc_test_to_external": 0.004854167582425184
       },
       "best_params": {
-        "learning_rate": 0.1,
-        "max_depth": 6,
-        "subsample": 0.8,
-        "colsample_bytree": 1.0,
-        "min_child_weight": 1,
+        "learning_rate": 0.05,
+        "max_depth": 5,
+        "subsample": 0.6,
+        "colsample_bytree": 0.8,
+        "min_child_weight": 5,
         "reg_lambda": 0.0
       },
-      "fit_time_s": 0.13837289810180664,
-      "inference_time_ms_per_shot": 0.00049591064453125
+      "fit_time_s": 0.2654128074645996,
+      "inference_time_ms_per_shot": 0.0005397796630859375
     },
     "lightgbm_full": {
       "la_liga_test": {
-        "log_loss": 0.29118846391915726,
-        "brier_score": 0.0850866124177557,
-        "roc_auc": 0.8084020979747405,
-        "ece": 0.015583922365803367,
+        "log_loss": 0.29047881341236764,
+        "brier_score": 0.08519242625101663,
+        "roc_auc": 0.8109032170331071,
+        "ece": 0.009647690744159342,
         "at_threshold_0.5": {
           "threshold": 0.5,
-          "accuracy": 0.8978884336589978,
+          "accuracy": 0.89536716041601,
           "confusion_matrix": {
-            "tn": 2765,
-            "fp": 29,
-            "fn": 295,
-            "tp": 84
+            "tn": 2763,
+            "fp": 31,
+            "fn": 301,
+            "tp": 78
           },
-          "precision_goal_class": 0.7433628318584071,
-          "recall_goal_class": 0.22163588390501318,
-          "f1_goal_class": 0.34146341463414637,
-          "precision_macro": 0.8234788015501187,
-          "recall_macro": 0.6056282497549403,
-          "f1_macro": 0.6430583215979068,
-          "precision_micro": 0.8978884336589978,
-          "recall_micro": 0.8978884336589978,
-          "f1_micro": 0.8978884336589978,
-          "precision_weighted": 0.884455815986136,
-          "recall_weighted": 0.8978884336589978,
-          "f1_weighted": 0.8726050282847904
+          "precision_goal_class": 0.7155963302752294,
+          "recall_goal_class": 0.20580474934036938,
+          "f1_goal_class": 0.319672131147541,
+          "precision_macro": 0.8086793661820011,
+          "recall_macro": 0.5973547726658898,
+          "f1_macro": 0.6314987490835008,
+          "precision_micro": 0.89536716041601,
+          "recall_micro": 0.89536716041601,
+          "f1_micro": 0.89536716041601,
+          "precision_weighted": 0.8795257360889831,
+          "recall_weighted": 0.89536716041601,
+          "f1_weighted": 0.8688329067624617
         },
         "at_best_f1_threshold": {
-          "threshold": 0.25172813027297586,
-          "accuracy": 0.8562874251497006,
+          "threshold": 0.1945718136544007,
+          "accuracy": 0.8276079420107154,
           "confusion_matrix": {
-            "tn": 2546,
-            "fp": 248,
-            "fn": 208,
-            "tp": 171
+            "tn": 2421,
+            "fp": 373,
+            "fn": 174,
+            "tp": 205
           },
-          "precision_goal_class": 0.4081145584725537,
-          "recall_goal_class": 0.45118733509234826,
-          "f1_goal_class": 0.42857142857142855,
-          "precision_macro": 0.6662940257867489,
-          "recall_macro": 0.6812128515118148,
-          "f1_macro": 0.6731898238747553,
-          "precision_micro": 0.8562874251497006,
-          "recall_micro": 0.8562874251497006,
-          "f1_micro": 0.8562874251497006,
-          "precision_weighted": 0.8627968349779817,
-          "recall_weighted": 0.8562874251497006,
-          "f1_weighted": 0.8593711742238049
+          "precision_goal_class": 0.3546712802768166,
+          "recall_goal_class": 0.5408970976253298,
+          "f1_goal_class": 0.4284221525600836,
+          "precision_macro": 0.6438096285777146,
+          "recall_macro": 0.7036983698577615,
+          "f1_macro": 0.6634595453837716,
+          "precision_micro": 0.8276079420107154,
+          "recall_micro": 0.8276079420107154,
+          "f1_micro": 0.8276079420107154,
+          "precision_weighted": 0.863875531870078,
+          "recall_weighted": 0.8276079420107154,
+          "f1_weighted": 0.8423487050652109
         }
       },
       "world_cup_2022_external_test": {
-        "log_loss": 0.26333161058011134,
-        "brier_score": 0.07551371308409202,
-        "roc_auc": 0.8220132196688905,
-        "ece": 0.015377625158480747
+        "log_loss": 0.26599795529616715,
+        "brier_score": 0.07605030223140323,
+        "roc_auc": 0.8173338275265628,
+        "ece": 0.019316809522961505
       },
       "generalization_gap": {
-        "logloss_val_to_test": 0.016534023359980943,
-        "logloss_test_to_external": -0.027856853339045917,
-        "auc_test_to_external": 0.013611121694150019
+        "logloss_val_to_test": 0.014414845596127268,
+        "logloss_test_to_external": -0.024480858116200488,
+        "auc_test_to_external": 0.006430610493455724
       },
       "best_params": {
-        "learning_rate": 0.03,
-        "num_leaves": 31,
-        "max_depth": 6,
-        "subsample": 0.6,
-        "colsample_bytree": 1.0,
-        "min_child_samples": 20,
+        "learning_rate": 0.1,
+        "num_leaves": 63,
+        "max_depth": -1,
+        "subsample": 1.0,
+        "colsample_bytree": 0.8,
+        "min_child_samples": 10,
         "reg_lambda": 1.0
       },
-      "fit_time_s": 0.5875120162963867,
-      "inference_time_ms_per_shot": 0.0012559890747070312
+      "fit_time_s": 0.5855789184570312,
+      "inference_time_ms_per_shot": 0.0009255409240722656
     }
   },
   "statsbomb_xg_baseline": {
@@ -447,20 +447,20 @@
     "lightgbm": {
       "logloss": {
         "metric_a_geo": 0.30288356391842497,
-        "metric_b_full": 0.29118846391915726,
-        "point_diff_full_minus_geo": -0.01169509999926771,
-        "ci_95_low": -0.018088804802468657,
-        "ci_95_high": -0.005300323711626485,
+        "metric_b_full": 0.29047881341236764,
+        "point_diff_full_minus_geo": -0.012404750506057327,
+        "ci_95_low": -0.01882271442548112,
+        "ci_95_high": -0.005421691753212689,
         "n_resamples_used": 1000,
         "statistically_significant": true,
         "defenders_improve_metric": true
       },
       "roc_auc": {
         "metric_a_geo": 0.787165958716662,
-        "metric_b_full": 0.8084020979747405,
-        "point_diff_full_minus_geo": 0.021236139258078546,
-        "ci_95_low": 0.007956784862427188,
-        "ci_95_high": 0.033945954340782084,
+        "metric_b_full": 0.8109032170331071,
+        "point_diff_full_minus_geo": 0.02373725831644513,
+        "ci_95_low": 0.0090633243699135,
+        "ci_95_high": 0.03748887884859875,
         "n_resamples_used": 1000,
         "statistically_significant": true,
         "defenders_improve_metric": true
@@ -469,20 +469,20 @@
     "logistic_regression": {
       "logloss": {
         "metric_a_geo": 0.5596455232808022,
-        "metric_b_full": 0.5299403593181327,
-        "point_diff_full_minus_geo": -0.029705163962669534,
-        "ci_95_low": -0.03724682760730122,
-        "ci_95_high": -0.021671308312818726,
+        "metric_b_full": 0.4310775321429893,
+        "point_diff_full_minus_geo": -0.12856799113781292,
+        "ci_95_low": -0.13813436677471186,
+        "ci_95_high": -0.1182145550020004,
         "n_resamples_used": 1000,
         "statistically_significant": true,
         "defenders_improve_metric": true
       },
       "roc_auc": {
         "metric_a_geo": 0.7837643990231612,
-        "metric_b_full": 0.807685334008231,
-        "point_diff_full_minus_geo": 0.023920934985069753,
-        "ci_95_low": 0.012352614725805474,
-        "ci_95_high": 0.03621046302380312,
+        "metric_b_full": 0.8045359165796289,
+        "point_diff_full_minus_geo": 0.020771517556467667,
+        "ci_95_low": 0.008760588540677142,
+        "ci_95_high": 0.03237275682823146,
         "n_resamples_used": 1000,
         "statistically_significant": true,
         "defenders_improve_metric": true
@@ -491,20 +491,20 @@
     "xgboost": {
       "logloss": {
         "metric_a_geo": 0.3028475344181061,
-        "metric_b_full": 0.2917800545692444,
-        "point_diff_full_minus_geo": -0.011067479848861694,
-        "ci_95_low": -0.01724688559770584,
-        "ci_95_high": -0.004788120090961457,
+        "metric_b_full": 0.2897087335586548,
+        "point_diff_full_minus_geo": -0.013138800859451294,
+        "ci_95_low": -0.019603081047534943,
+        "ci_95_high": -0.006150845438241963,
         "n_resamples_used": 1000,
         "statistically_significant": true,
         "defenders_improve_metric": true
       },
       "roc_auc": {
         "metric_a_geo": 0.7889583408094616,
-        "metric_b_full": 0.8078241539068831,
-        "point_diff_full_minus_geo": 0.018865813097421524,
-        "ci_95_low": 0.006951896197326394,
-        "ci_95_high": 0.030739549977589476,
+        "metric_b_full": 0.812646964943726,
+        "point_diff_full_minus_geo": 0.023688624134264424,
+        "ci_95_low": 0.01133201181324095,
+        "ci_95_high": 0.03693616135199496,
         "n_resamples_used": 1000,
         "statistically_significant": true,
         "defenders_improve_metric": true
@@ -516,29 +516,29 @@
     "results": {
       "headers": {
         "n": 458,
-        "log_loss": 0.3129362463951111,
-        "roc_auc": 0.7042156862745098
+        "log_loss": 0.31410205364227295,
+        "roc_auc": 0.7183823529411764
       },
       "long_range_over_20m": {
         "n": 1186,
-        "log_loss": 0.13395947217941284,
-        "roc_auc": 0.7695026178010472
+        "log_loss": 0.13214713335037231,
+        "roc_auc": 0.7740183246073298
       },
       "crowded_3plus_defenders_in_triangle": {
         "n": 497,
-        "log_loss": 0.2156972587108612,
-        "roc_auc": 0.7119914346895074
+        "log_loss": 0.2147074192762375,
+        "roc_auc": 0.7096359743040686
       },
       "open_1_defender_or_fewer": {
         "n": 1724,
-        "log_loss": 0.3593796491622925,
-        "roc_auc": 0.7966070492422858
+        "log_loss": 0.35686519742012024,
+        "roc_auc": 0.8016288114309401
       }
     }
   },
   "calibration_from_training": {
-    "ece_raw": 0.015268509066935183,
-    "ece_calibrated": 0.023194158406328828,
+    "ece_raw": 0.011673547585811515,
+    "ece_calibrated": 0.012498371150600556,
     "evaluated_on": "test split (calibrator fit on validation only, to avoid an optimistic in-sample ECE)",
     "calibration_applied": false
   },
@@ -548,35 +548,46 @@
     "la_liga_with_freeze_frame_rows": 20936,
     "wc_all_rows": 1430,
     "wc_with_freeze_frame_rows": 1430,
-    "note": "All variants (geo and full) trained/evaluated only on shots with a usable freeze frame, for a fair comparison."
+    "note": "All variants (geo and full) trained/evaluated only on shots with a usable freeze frame, for a fair comparison.",
+    "synthetic_empty_net": {
+      "enabled": true,
+      "n": 400,
+      "weight": 4.0,
+      "sigma_foot_deg": 6,
+      "sigma_head_deg": 12,
+      "mishit": 0.05,
+      "head_power_start_m": 8,
+      "head_power_decay_m": 4,
+      "note": "Added to the 'full' model's TRAINING split only (soft-labeled via sample_weight, see multiscore/synthetic.py); val/test/external_test are always 100% real shots."
+    }
   },
   "monotonic_constraints_ablation": {
     "xgboost": {
       "constrained": {
-        "val_logloss": 0.27455756068229675,
-        "test_logloss": 0.2917800545692444,
-        "test_auc": 0.8078241539068831
+        "val_logloss": 0.27550846338272095,
+        "test_logloss": 0.2897087335586548,
+        "test_auc": 0.812646964943726
       },
       "unconstrained": {
-        "val_logloss": 0.27378979325294495,
-        "test_logloss": 0.29171958565711975,
-        "test_auc": 0.8091231115299842,
-        "external_test_logloss": 0.26416173577308655,
-        "external_test_auc": 0.8214186434395849
+        "val_logloss": 0.2747267186641693,
+        "test_logloss": 0.2908555567264557,
+        "test_auc": 0.8106411590611621,
+        "external_test_logloss": 0.26418501138687134,
+        "external_test_auc": 0.8194753315212915
       }
     },
     "lightgbm": {
       "constrained": {
-        "val_logloss": 0.2746544405591763,
-        "test_logloss": 0.29118846391915726,
-        "test_auc": 0.8084020979747405
+        "val_logloss": 0.2760639678162404,
+        "test_logloss": 0.29047881341236764,
+        "test_auc": 0.8109032170331071
       },
       "unconstrained": {
-        "val_logloss": 0.2741019271414449,
-        "test_logloss": 0.2908767030565286,
-        "test_auc": 0.8090773104069595,
-        "external_test_logloss": 0.2628183695610117,
-        "external_test_auc": 0.8239899925871015
+        "val_logloss": 0.2740860387099087,
+        "test_logloss": 0.29161964374808974,
+        "test_auc": 0.8089285748012609,
+        "external_test_logloss": 0.2649138762529124,
+        "external_test_auc": 0.8171176179886336
       }
     }
   },
@@ -585,64 +596,64 @@
       "kind": "importance",
       "ranked_features": [
         [
-          "gk_distance_to_goal_line_m",
-          516
-        ],
-        [
           "shot_angle_deg",
-          502
+          268
         ],
         [
           "nearest_defender_dist_m",
-          438
-        ],
-        [
-          "gk_distance_to_shooter_m",
-          397
-        ],
-        [
-          "goal_coverage_pct",
-          382
-        ],
-        [
-          "gk_deviation_from_shot_line_m",
-          372
+          189
         ],
         [
           "distance_to_goal_m",
-          307
+          153
         ],
         [
-          "shot_body_part_Head",
-          80
+          "goal_coverage_pct",
+          120
         ],
         [
-          "shot_technique_Normal",
-          52
+          "gk_distance_to_goal_line_m",
+          83
         ],
         [
-          "shot_technique_Half Volley",
-          45
+          "gk_reach_coverage_pct",
+          40
         ],
         [
-          "shot_type_Free Kick",
-          38
-        ],
-        [
-          "shot_technique_Lob",
-          35
-        ],
-        [
-          "play_pattern_From Corner",
+          "shot_body_part_Right Foot",
           32
         ],
         [
-          "defenders_in_triangle",
-          27
+          "gk_deviation_from_shot_line_m",
+          30
+        ],
+        [
+          "shot_body_part_Head",
+          26
+        ],
+        [
+          "shot_technique_Normal",
+          18
+        ],
+        [
+          "play_pattern_From Free Kick",
+          15
+        ],
+        [
+          "play_pattern_Regular Play",
+          15
+        ],
+        [
+          "shot_one_on_one",
+          15
+        ],
+        [
+          "shot_type_Free Kick",
+          14
         ],
         [
           "shot_body_part_Left Foot",
-          25
+          13
         ]
       ]
     },
@@ -650,64 +661,64 @@
       "kind": "coefficient",
       "ranked_features": [
         [
-          "goalkeeper_present",
-          7.967997260862384
+          "shot_body_part_Head",
+          -0.6582392788189042
         ],
         [
-          "under_pressure",
-          -2.930272578412714
+          "shot_angle_deg",
+          0.6075935010985177
+        ],
+        [
+          "gk_distance_to_shooter_m",
+          -0.5473341239881072
+        ],
+        [
+          "shot_body_part_Right Foot",
+          0.3741426711930101
         ],
         [
           "shot_type_Open Play",
-          -2.012175318136848
-        ],
-        [
-          "shot_technique_Backheel",
-          -1.5184027285671524
-        ],
-        [
-          "distance_to_goal_m",
-          -1.507866460935855
-        ],
-        [
-          "shot_body_part_Head",
-          -1.3826523194317115
-        ],
-        [
-          "shot_body_part_Other",
-          -1.2263494058237618
+          -0.34779218483199775
         ],
         [
           "shot_type_Free Kick",
-          -0.9180972602758125
+          0.3462554946130508
         ],
         [
-          "shot_technique_Overhead Kick",
-          -0.8570473586100782
+          "goal_coverage_pct",
+          -0.3462358752894055
         ],
         [
-          "open_goal_geometric",
-          0.7845418345223306
-        ],
-        [
-          "shot_technique_Half Volley",
-          -0.7373776702963315
-        ],
-        [
-          "play_pattern_From Corner",
-          -0.6451979153114191
-        ],
-        [
-          "play_pattern_From Kick Off",
-          -0.5994867789567608
+          "shot_body_part_Left Foot",
+          0.31571722504532146
         ],
         [
           "gk_distance_to_goal_line_m",
-          0.5982946172005813
+          0.28777712699978186
         ],
         [
-          "play_pattern_Other",
-          0.5950899445410381
+          "shot_technique_Half Volley",
+          -0.2576303723638928
+        ],
+        [
+          "shot_technique_Lob",
+          0.2571760602608482
+        ],
+        [
+          "distance_to_goal_m",
+          -0.2042795733437084
+        ],
+        [
+          "play_pattern_From Corner",
+          -0.19141675453767795
+        ],
+        [
+          "open_goal_geometric",
+          0.164026730232118
+        ],
+        [
+          "nearest_defender_dist_m",
+          0.15207566655564897
         ]
       ]
     },
@@ -715,64 +726,64 @@
       "kind": "importance",
       "ranked_features": [
         [
-          "shot_body_part_Head",
-          0.10862670093774796
+          "open_goal_geometric",
+          0.7298442721366882
         ],
         [
-          "gk_distance_to_shooter_m",
-          0.07849608361721039
-        ],
-        [
-          "shot_angle_deg",
-          0.05918935686349869
-        ],
-        [
-          "goal_coverage_pct",
-          0.04951411485671997
+          "gk_reach_coverage_pct",
+          0.059271764010190964
         ],
         [
           "defenders_in_triangle",
-          0.042627785354852676
+          0.032326601445674896
         ],
         [
-          "shot_technique_Lob",
-          0.04027293622493744
-        ],
-        [
-          "shot_type_Free Kick",
-          0.03663094714283943
-        ],
-        [
-          "distance_to_goal_m",
-          0.036153070628643036
-        ],
-        [
-          "nearest_defender_dist_m",
-          0.03241032734513283
-        ],
-        [
-          "shot_technique_Normal",
-          0.028789160773158073
-        ],
-        [
-          "shot_technique_Diving Header",
-          0.028444647789001465
+          "goal_coverage_pct",
+          0.030159730464220047
         ],
         [
           "gk_distance_to_goal_line_m",
-          0.02700471319258213
+          0.020219728350639343
         ],
         [
-          "play_pattern_From Corner",
-          0.026591772213578224
+          "shot_body_part_Right Foot",
+          0.018089963123202324
         ],
         [
-          "shot_technique_Half Volley",
-          0.026188412681221962
+          "shot_angle_deg",
+          0.011731543578207493
         ],
         [
-          "defenders_within_1m",
-          0.02481347881257534
+          "shot_body_part_Head",
+          0.011056466959416866
+        ],
+        [
+          "distance_to_goal_m",
+          0.007077478338032961
+        ],
+        [
+          "under_pressure",
+          0.005534046795219183
+        ],
+        [
+          "shot_technique_Normal",
+          0.0053632911294698715
+        ],
+        [
+          "nearest_defender_dist_m",
+          0.005291377659887075
+        ],
+        [
+          "shot_technique_Lob",
+          0.004988338798284531
+        ],
+        [
+          "shot_technique_Diving Header",
+          0.004694292321801186
+        ],
+        [
+          "shot_type_Open Play",
+          0.0046159359626472
         ]
       ]
     }

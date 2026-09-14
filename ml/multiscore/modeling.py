@@ -32,6 +32,7 @@ FEATURE_SETS: dict[str, dict[str, list[str]]] = {
             "gk_distance_to_goal_line_m",
             "gk_deviation_from_shot_line_m",
             "goal_coverage_pct",
+            "gk_reach_coverage_pct",
         ],
         "categorical": ["shot_body_part", "shot_type", "shot_technique", "play_pattern"],
         "boolean": [
@@ -83,6 +84,7 @@ MONOTONIC_CONSTRAINTS = {
         "gk_distance_to_shooter_m": 1,
         "gk_distance_to_goal_line_m": 1,
         "gk_deviation_from_shot_line_m": 1,
+        "gk_reach_coverage_pct": -1,
     },
 }
 

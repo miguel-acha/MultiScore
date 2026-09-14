@@ -22,8 +22,11 @@ export default function Credits() {
   return (
     <div className="flex flex-col gap-8">
       <div>
-        <h1 className="font-display text-4xl">CRÉDITOS DE IMÁGENES</h1>
-        <p className="max-w-2xl text-(--color-text-dim)">
+        <div className="flex items-center gap-3">
+          <img src="/images/logo-badge-128.webp" alt="" className="h-10 w-10" />
+          <h1 className="font-display text-4xl">CRÉDITOS DE IMÁGENES</h1>
+        </div>
+        <p className="mt-2 max-w-2xl text-(--color-text-dim)">
           Las fotos de jugadores son de Wikimedia Commons, con licencia libre y su autor. Los escudos de club son la
           imagen del club en Wikipedia en inglés, usados con fines académicos no comerciales bajo su política de uso
           justo (no son de licencia libre). Las banderas de las selecciones son de{" "}

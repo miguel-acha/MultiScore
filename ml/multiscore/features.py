@@ -26,6 +26,7 @@ from multiscore.geometry import (
     deviation_from_shot_line_m,
     distance_m,
     distance_to_goal_m,
+    gk_reach_coverage_pct,
     goal_coverage_pct,
     point_in_triangle,
     shot_angle_deg,
@@ -55,6 +56,7 @@ DEFENDER_FEATURE_COLUMNS = [
     "gk_in_triangle",
     "gk_deviation_from_shot_line_m",
     "goal_coverage_pct",
+    "gk_reach_coverage_pct",
     "open_goal_geometric",
 ]
 
@@ -99,6 +101,7 @@ def geo_features_from_row(row: pd.Series) -> dict:
 def defender_features_from_freeze_frame(
     shooter: tuple[float, float],
     freeze_frame: list[dict] | None,
+    is_head: bool = False,
 ) -> dict:
     """Compute the defender-context feature block from a freeze frame.
 
@@ -106,6 +109,12 @@ def defender_features_from_freeze_frame(
     {"location": [x, y], "player": {...}, "position": {...}, "teammate": bool}.
     The shooter is not part of the freeze frame and must be identified by
     the corresponding shot row.
+
+    `is_head` selects the ball-flight speed used for the goalkeeper's
+    reach window (see `geometry.gk_reach_m`) - a header travels much
+    slower than a struck shot, so a keeper who looks "beaten" in the
+    static freeze frame has real time to get across for a header but not
+    for a fast strike from the same spot.
 
     If freeze_frame is None (StatsBomb has no 360 data for this shot at
     all), every numeric field is set to the NO_FREEZE_FRAME_SENTINEL so
@@ -139,6 +148,7 @@ def defender_features_from_freeze_frame(
             "gk_in_triangle": 0,
             "gk_deviation_from_shot_line_m": NO_FREEZE_FRAME_SENTINEL,
             "goal_coverage_pct": NO_FREEZE_FRAME_SENTINEL,
+            "gk_reach_coverage_pct": NO_FREEZE_FRAME_SENTINEL,
             "open_goal_geometric": 0,
             "has_freeze_frame": False,
         }
@@ -192,6 +202,7 @@ def defender_features_from_freeze_frame(
         gk_present = 0
 
     coverage_pct = goal_coverage_pct(shooter, defenders + ([goalkeeper] if goalkeeper else []))
+    reach_coverage_pct = gk_reach_coverage_pct(shooter, goalkeeper, is_head)
     open_goal = int(n_in_triangle == 0 and not gk_in_tri)
 
     return {
@@ -206,6 +217,7 @@ def defender_features_from_freeze_frame(
         "gk_in_triangle": int(gk_in_tri),
         "gk_deviation_from_shot_line_m": gk_deviation,
         "goal_coverage_pct": coverage_pct,
+        "gk_reach_coverage_pct": reach_coverage_pct,
         "open_goal_geometric": open_goal,
         "has_freeze_frame": True,
     }
@@ -215,7 +227,8 @@ def build_feature_row(row: pd.Series) -> dict:
     """Combine geo + defender features for a single shot row into one dict."""
     shooter = (row["loc_x"], row["loc_y"])
     geo = geo_features_from_row(row)
-    defenders = defender_features_from_freeze_frame(shooter, row.get("freeze_frame"))
+    is_head = row.get("shot_body_part") == "Head"
+    defenders = defender_features_from_freeze_frame(shooter, row.get("freeze_frame"), is_head=is_head)
     return {**geo, **defenders}
 
 

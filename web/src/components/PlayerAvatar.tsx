@@ -3,7 +3,7 @@
 // placeholder while the image loads (there was previously no loading
 // state at all - the photo just popped in, or an unhelpful "?" sat there
 // forever if there was no photo), then fades/scales in once it has.
-import { useEffect, useState } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 import { User } from "lucide-react";
 import type { Player, PlayerListItem } from "../api";
 import { stripHtml } from "../lib/format";
@@ -32,7 +32,9 @@ interface PlayerAvatarProps {
 }
 
 export default function PlayerAvatar({ player, photoUrl, name, size = "md", jerseyNumber, credit }: PlayerAvatarProps) {
-  const src = player ? player.photo?.thumb_url ?? null : (photoUrl ?? null);
+  const src = player
+    ? ((size === "lg" ? player.photo?.thumb_url_lg : null) ?? player.photo?.thumb_url ?? null)
+    : (photoUrl ?? null);
   const altName = player?.name ?? name ?? "";
   const photo = player?.photo;
   const derivedCredit =
@@ -41,13 +43,29 @@ export default function PlayerAvatar({ player, photoUrl, name, size = "md", jers
       : photo
         ? [stripHtml(photo.artist_html), photo.license].filter(Boolean).join(" · ")
         : undefined;
-  const [loaded, setLoaded] = useState(false);
+  // Tracks which src has actually finished loading, instead of a plain
+  // loaded boolean reset by a useEffect - that reset ran AFTER onLoad had
+  // already fired for a cached image (e.g. the same player's photo shown
+  // again in a tooltip or a re-rendered list row), so `loaded` got set to
+  // false with nothing left to trigger onLoad again and the avatar stayed
+  // invisible forever. Deriving `loaded` straight from a src comparison
+  // has no such ordering to get wrong.
+  const [loadedSrc, setLoadedSrc] = useState<string | null>(null);
+  const [failed, setFailed] = useState(false);
+  const imgRef = useRef<HTMLImageElement>(null);
+  const loaded = loadedSrc === src;
   const px = SIZES[size];
 
-  // Reset the fade-in when the underlying photo changes (e.g. a tooltip
-  // avatar reused across different hovered shots) instead of showing the
-  // previous photo's "loaded" state on the new src for a frame.
-  useEffect(() => setLoaded(false), [src]);
+  // An <img> whose src is already in the browser cache can finish loading
+  // before this component's onLoad handler is even attached (it fires
+  // during the same paint as mount) - check img.complete right after
+  // mount/src-change so that case still marks it loaded.
+  useLayoutEffect(() => {
+    setFailed(false);
+    if (imgRef.current?.complete && imgRef.current.naturalWidth > 0) {
+      setLoadedSrc(src);
+    }
+  }, [src]);
 
   return (
     <div
@@ -56,12 +74,16 @@ export default function PlayerAvatar({ player, photoUrl, name, size = "md", jers
     >
       {!loaded && <div className="skeleton-shimmer absolute inset-0" />}
 
-      {src && (
+      {src && !failed && (
         <img
+          ref={imgRef}
           src={src}
           alt={altName}
           title={derivedCredit || undefined}
-          onLoad={() => setLoaded(true)}
+          loading="lazy"
+          decoding="async"
+          onLoad={() => setLoadedSrc(src)}
+          onError={() => setFailed(true)}
           className="absolute inset-0 h-full w-full object-cover transition-all duration-300"
           style={{
             objectPosition: "50% 20%",
@@ -71,7 +93,7 @@ export default function PlayerAvatar({ player, photoUrl, name, size = "md", jers
         />
       )}
 
-      {!src && (
+      {(!src || failed) && (
         <div className="absolute inset-0 flex flex-col items-center justify-center gap-0.5 text-(--color-text-faint)">
           <User size={px * 0.42} strokeWidth={1.5} />
           {jerseyNumber != null && (

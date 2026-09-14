@@ -9,6 +9,7 @@ import { api } from "../api";
 import type { ChallengeShot } from "../api";
 import HalfPitch from "../components/HalfPitch";
 import type { PitchPlayer } from "../components/HalfPitch";
+import LogoSpinner from "../components/LogoSpinner";
 import { finishGame, recordRound } from "../lib/progress";
 
 const N_ROUNDS = 10;
@@ -90,7 +91,7 @@ export default function GoalOrNot() {
   }
 
   if (phase === "error") return <div className="text-(--color-rival)">Error: {error}</div>;
-  if (phase === "loading" || !shot) return <p className="text-(--color-text-dim)">Cargando disparos…</p>;
+  if (phase === "loading" || !shot) return <LogoSpinner label="Cargando disparos…" />;
 
   const userTotal = userScores.reduce((a, b) => a + b, 0);
   const aiTotal = aiScores.reduce((a, b) => a + b, 0);

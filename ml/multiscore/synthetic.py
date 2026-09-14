@@ -33,7 +33,7 @@ import pandas as pd
 from scipy.stats import norm
 
 from multiscore.features import defender_features_from_freeze_frame, geo_features_from_row
-from multiscore.geometry import GOAL_CENTER, LEFT_POST, RIGHT_POST
+from multiscore.geometry import GOAL_CENTER, LEFT_POST, RIGHT_POST, distance_to_goal_m
 
 
 def _bearing_deg(origin: tuple[float, float], point: tuple[float, float]) -> float:
@@ -48,6 +48,14 @@ def empty_net_probability(x: float, y: float, is_head: bool, cfg: dict) -> float
     by a random angle ~ N(0, sigma), sigma depending on body part. The
     probability of scoring is exactly the probability that error angle
     still lands the shot between the posts, minus a flat mishit rate.
+
+    Headers additionally lose power with distance: a header simply cannot
+    be struck as hard or as accurately as a kicked shot, so beyond
+    `head_power_start_m` the probability decays exponentially towards
+    zero on top of the angular-accuracy term above - without this, the
+    angular model alone (which only cares about aim, not power) scored a
+    22m open-goal header as a near-certain goal, which cannot actually
+    reach the target with real pace.
     """
     shooter = (x, y)
     aim = _bearing_deg(shooter, GOAL_CENTER)
@@ -57,6 +65,10 @@ def empty_net_probability(x: float, y: float, is_head: bool, cfg: dict) -> float
     sigma = cfg["sigma_head_deg"] if is_head else cfg["sigma_foot_deg"]
     p = norm.cdf(hi / sigma) - norm.cdf(lo / sigma)
     p *= 1 - cfg["mishit"]
+    if is_head:
+        dist = distance_to_goal_m(shooter)
+        excess = max(0.0, dist - cfg["head_power_start_m"])
+        p *= math.exp(-excess / cfg["head_power_decay_m"])
     return float(np.clip(p, 0.0, 1.0))
 
 
@@ -72,6 +84,11 @@ def build_synthetic_empty_net(cfg: dict, seed: int = 42) -> pd.DataFrame:
     xs = rng.uniform(85.0, 118.0, size=n)
     ys = np.clip(40.0 + rng.normal(0.0, 10.0, size=n), 6.0, 74.0)
     is_head = rng.random(n) < 0.2
+    # Headers only occur realistically within ~18m (x=100) of goal - unlike
+    # a struck shot, nobody heads an open-goal chance from 30m - so resample
+    # x for header rows into that closer range instead of reusing the
+    # foot-shot range, which extends out to 35m.
+    xs = np.where(is_head, rng.uniform(100.0, 118.0, size=n), xs)
 
     rows = []
     for x, y, head in zip(xs, ys, is_head):

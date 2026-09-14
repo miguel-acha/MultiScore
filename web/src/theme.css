@@ -162,6 +162,19 @@ body {
   }
 }
 
+/* Gentle logo spin for loading states (LogoSpinner.tsx) - slow and
+   single-direction, unlike the pulsing "bugged" feel of the old timeline
+   ring animation, so it reads as "working" rather than glitching. */
+.animate-spin-slow {
+  animation: spin-slow 8s linear infinite;
+}
+
+@keyframes spin-slow {
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
 /* Flag icons ship as a rectangular sprite by default; force them square to
    match the club-crest badges they sit next to. */
 .fi.fi-square {
