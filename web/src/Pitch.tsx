@@ -30,7 +30,11 @@ function fromSvg(sx: number, sy: number): [number, number] {
 function box(x1: number, y1: number, x2: number, y2: number) {
   const [sx1, sy1] = toSvg(x1, y1);
   const [sx2, sy2] = toSvg(x2, y2);
-  return { x: Math.min(sx1, sx2), y: Math.min(sy1, sy2), w: Math.abs(sx2 - sx1), h: Math.abs(sy2 - sy1) };
+  // Keys must match SVG <rect> attribute names exactly for the {...box(...)}
+  // spread below to do anything - "w"/"h" are silently invalid (rect wants
+  // width/height), which is why these boxes previously rendered as an
+  // invisible 0x0 rect: x/y landed, the size never did.
+  return { x: Math.min(sx1, sx2), y: Math.min(sy1, sy2), width: Math.abs(sx2 - sx1), height: Math.abs(sy2 - sy1) };
 }
 
 export interface PitchPlayer {
@@ -121,28 +125,31 @@ export default function Pitch({
         />
       ))}
 
-      <rect x={PAD} y={PAD} width={VIEW_W - 2 * PAD} height={VIEW_H - 2 * PAD} fill="none" stroke="rgba(255,255,255,0.35)" strokeWidth={2} />
-      <line x1={centerX} y1={PAD} x2={centerX} y2={VIEW_H - PAD} stroke="rgba(255,255,255,0.25)" strokeWidth={1.5} />
-      <circle cx={centerX} cy={centerY} r={40} fill="none" stroke="rgba(255,255,255,0.25)" strokeWidth={1.5} />
+      <rect x={PAD} y={PAD} width={VIEW_W - 2 * PAD} height={VIEW_H - 2 * PAD} fill="none" stroke="rgba(255,255,255,0.55)" strokeWidth={2.5} />
+      <line x1={centerX} y1={PAD} x2={centerX} y2={VIEW_H - PAD} stroke="rgba(255,255,255,0.4)" strokeWidth={2} />
+      <circle cx={centerX} cy={centerY} r={44} fill="none" stroke="rgba(255,255,255,0.4)" strokeWidth={2} />
+      <circle cx={centerX} cy={centerY} r={2.5} fill="rgba(255,255,255,0.6)" />
 
-      {/* penalty areas, both ends, for pitch context */}
-      <rect {...rightBox} fill="none" stroke="rgba(255,255,255,0.3)" strokeWidth={1.5} />
-      <rect {...rightSixYard} fill="none" stroke="rgba(255,255,255,0.3)" strokeWidth={1.5} />
-      <circle cx={rightPenSpotX} cy={rightPenSpotY} r={4} fill="rgba(255,255,255,0.5)" />
+      {/* penalty areas, both ends, for pitch context - drawn with a bright
+          enough stroke to read clearly against the pitch fill, unlike the
+          near-invisible 0.18-0.3 alpha these had before. */}
+      <rect {...rightBox} fill="none" stroke="rgba(255,255,255,0.55)" strokeWidth={2} />
+      <rect {...rightSixYard} fill="none" stroke="rgba(255,255,255,0.55)" strokeWidth={2} />
+      <circle cx={rightPenSpotX} cy={rightPenSpotY} r={4} fill="rgba(255,255,255,0.75)" />
       <path
         d={`M ${rightArcX} ${rightPenSpotY - arcHalfChord} A ${arcRadiusPx} ${arcRadiusPx} 0 0 0 ${rightArcX} ${rightPenSpotY + arcHalfChord}`}
         fill="none"
-        stroke="rgba(255,255,255,0.3)"
-        strokeWidth={1.5}
+        stroke="rgba(255,255,255,0.55)"
+        strokeWidth={2}
       />
-      <rect {...leftBox} fill="none" stroke="rgba(255,255,255,0.18)" strokeWidth={1.5} />
-      <rect {...leftSixYard} fill="none" stroke="rgba(255,255,255,0.18)" strokeWidth={1.5} />
-      <circle cx={leftPenSpotX} cy={leftPenSpotY} r={4} fill="rgba(255,255,255,0.3)" />
+      <rect {...leftBox} fill="none" stroke="rgba(255,255,255,0.4)" strokeWidth={2} />
+      <rect {...leftSixYard} fill="none" stroke="rgba(255,255,255,0.4)" strokeWidth={2} />
+      <circle cx={leftPenSpotX} cy={leftPenSpotY} r={4} fill="rgba(255,255,255,0.5)" />
       <path
         d={`M ${leftArcX} ${leftPenSpotY - arcHalfChord} A ${arcRadiusPx} ${arcRadiusPx} 0 0 1 ${leftArcX} ${leftPenSpotY + arcHalfChord}`}
         fill="none"
-        stroke="rgba(255,255,255,0.18)"
-        strokeWidth={1.5}
+        stroke="rgba(255,255,255,0.4)"
+        strokeWidth={2}
       />
 
       {/* attacking goal, highlighted */}
@@ -167,14 +174,14 @@ export default function Pitch({
       {showTriangle && (
         <polygon
           points={`${shooterSvgX},${shooterSvgY} ${leftPostX},${leftPostY} ${rightPostX},${rightPostY}`}
-          fill="rgba(74,222,128,0.14)"
-          stroke="rgba(74,222,128,0.45)"
+          fill="rgba(255,255,255,0.12)"
+          stroke="rgba(255,255,255,0.4)"
         />
       )}
 
       {players.map((p) => {
         const [sx, sy] = toSvg(p.x, p.y);
-        const fill = p.isGoalkeeper ? "#facc15" : p.teammate ? "#38bdf8" : "#f87171";
+        const fill = p.isGoalkeeper ? "#facc15" : p.teammate ? "#9ca3af" : "#f87171";
         const radius = p.isGoalkeeper ? 10 : 8;
         return (
           <g key={p.id}>
@@ -201,7 +208,7 @@ export default function Pitch({
         cx={shooterSvgX}
         cy={shooterSvgY}
         r={9}
-        fill="#4ade80"
+        fill="#ffffff"
         stroke="#0b1220"
         strokeWidth={2}
         style={{ cursor: onShooterMove ? "grab" : "default" }}

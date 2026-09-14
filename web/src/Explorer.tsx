@@ -8,6 +8,7 @@ import { api } from "./api";
 import type { Competition, Match, Shot, Player } from "./api";
 import Pitch from "./Pitch";
 import type { PitchPlayer } from "./Pitch";
+import Select from "./Select";
 
 function initials(name: string): string {
   return name
@@ -102,43 +103,39 @@ export default function Explorer() {
       <div className="controls">
         <label>
           Competición
-          <select
-            value={competitionId ?? ""}
-            onChange={(e) => {
-              const cid = Number(e.target.value);
+          <Select
+            value={competitionId != null ? String(competitionId) : ""}
+            onChange={(v) => {
+              const cid = Number(v);
               setCompetitionId(cid);
               const c = competitions.find((c) => c.competition_id === cid);
               setSeasonId(c?.seasons[0]?.season_id ?? null);
               setMatchId(null);
             }}
-          >
-            {competitions.map((c) => (
-              <option key={c.competition_id} value={c.competition_id}>
-                {c.name}
-              </option>
-            ))}
-          </select>
+            options={competitions.map((c) => ({ value: String(c.competition_id), label: c.name }))}
+          />
         </label>
         {competition && competition.seasons.length > 1 && (
           <label>
             Temporada
-            <select value={seasonId ?? ""} onChange={(e) => { setSeasonId(Number(e.target.value)); setMatchId(null); }}>
-              {competition.seasons.map((s) => (
-                <option key={s.season_id} value={s.season_id}>{s.label}</option>
-              ))}
-            </select>
+            <Select
+              value={seasonId != null ? String(seasonId) : ""}
+              onChange={(v) => { setSeasonId(Number(v)); setMatchId(null); }}
+              options={competition.seasons.map((s) => ({ value: String(s.season_id), label: s.label }))}
+            />
           </label>
         )}
         <label>
           Partido
-          <select value={matchId ?? ""} onChange={(e) => setMatchId(Number(e.target.value))}>
-            <option value="">Selecciona un partido</option>
-            {matchesInSeason.map((m) => (
-              <option key={m.match_id} value={m.match_id}>
-                {m.home_team} {m.home_score}-{m.away_score} {m.away_team} · {m.n_shots} disparos
-              </option>
-            ))}
-          </select>
+          <Select
+            value={matchId != null ? String(matchId) : ""}
+            onChange={(v) => setMatchId(Number(v))}
+            placeholder="Selecciona un partido"
+            options={matchesInSeason.map((m) => ({
+              value: String(m.match_id),
+              label: `${m.home_team} ${m.home_score}-${m.away_score} ${m.away_team} · ${m.n_shots} disparos`,
+            }))}
+          />
         </label>
       </div>
 
