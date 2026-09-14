@@ -1,25 +1,32 @@
-"""Team crests/flags for the web UI: club badges from Wikimedia (Wikidata +
-Commons), national teams as ISO country codes for CSS flag rendering -
-never generated, never a third-party sports API with trademarked logos.
+"""Team crests/flags for the web UI.
 
-For each La Liga club: search Wikidata for a matching football club
-(P31 = Q476028, "association football club"), pull its logo claim (P154),
-then ask Commons for a small PNG thumbnail plus license/author - same
-pattern as ml/multiscore/photos.py, reusing its request helpers.
+National teams: mapped to a fixed ISO 3166-1 alpha-2 code (see
+NATIONAL_TEAM_ISO below), rendered client-side with the `flag-icons` CSS
+package - no lookup needed.
 
-World Cup national teams don't get looked up at all: they're mapped to a
-fixed ISO 3166-1 alpha-2 code (see NATIONAL_TEAM_ISO below) so the web app
-can render a flag with the `flag-icons` CSS package instead of a fetched
-image.
+Club crests: a club's CURRENT badge is a live trademark, so it is almost
+never freely licensed - it isn't on Wikimedia Commons at all (Commons'
+policy forbids non-free/fair-use content entirely), and the handful that
+resolve there via Wikidata's logo claim (P154) are old, retired designs,
+not the current one (see git history - that approach was tried first).
 
-configs/team_overrides.yaml lets a person hand-fix a wrong/missing club
-match without touching this script (team name -> wikidata_id, or
-team name -> "skip" to force the initials badge fallback).
+This version instead takes the crest directly from each club's English
+Wikipedia infobox image (via the REST summary API), which IS the current
+badge for every major club. Those images are hosted under Wikipedia's
+"non-free logo" fair-use policy: fine for a non-commercial academic
+project used with attribution, not for a commercial redistribution - see
+the /creditos page, which is why this module is used at all instead of
+Commons-only. `TEAM_TO_WIKIPEDIA_TITLE` below is a hand-verified mapping
+(team name in the shot data -> exact enwiki article title), not a search,
+specifically to avoid the failure mode of a previous free-text-search
+attempt returning the wrong club, the wrong sport, or a kit-texture image
+for several teams.
 """
 
 from __future__ import annotations
 
 import json
+import re
 import time
 from pathlib import Path
 
@@ -31,20 +38,9 @@ OUT_PATH = ROOT / "api" / "app" / "data" / "teams.json"
 OVERRIDES_PATH = ROOT / "configs" / "team_overrides.yaml"
 
 USER_AGENT = "MultiScore/0.1 (student project; https://github.com/miguel-acha/MultiScore)"
-WIKIDATA_API = "https://www.wikidata.org/w/api.php"
-COMMONS_API = "https://commons.wikimedia.org/w/api.php"
-# Wikidata models "football club" inconsistently across entries - some
-# clubs are typed directly as Q476028 ("association football club"), others
-# only carry a narrower subclass like Q103229495 ("men's association
-# football team") or a club-specific class Wikidata added later. Rather
-# than chase every subclass QID, a candidate is accepted if it has EITHER
-# one of these common types OR simply a logo image claim (P154) - a
-# Wikidata item for a short, ambiguous team name like "Mallorca" or
-# "Huesca" that also happens to have a football-club logo is, in practice,
-# always the club and not the city/place.
-FOOTBALL_CLUB_QIDS = {"Q476028", "Q103229495", "Q20639856"}
-SLEEP_BETWEEN_REQUESTS_S = 0.2
-THUMB_WIDTH_PX = 128
+WIKIPEDIA_REST_SUMMARY = "https://en.wikipedia.org/api/rest_v1/page/summary/{title}"
+WIKIPEDIA_API = "https://en.wikipedia.org/w/api.php"
+SLEEP_BETWEEN_REQUESTS_S = 0.15
 
 # World Cup 2022 national teams -> ISO 3166-1 alpha-2 (lowercase, as
 # `flag-icons` expects for its `fi-xx` classes). England/Wales/Scotland use
@@ -60,6 +56,44 @@ NATIONAL_TEAM_ISO: dict[str, str] = {
     "Tunisia": "tn", "United States": "us", "Uruguay": "uy", "Wales": "gb-wls",
 }
 
+# Hand-verified: team name as it appears in the shot data -> exact English
+# Wikipedia article title. Checked against the REST summary API (returns
+# the club's current infobox image for every entry) before being trusted
+# here - see the plan doc for the verification run.
+TEAM_TO_WIKIPEDIA_TITLE: dict[str, str] = {
+    "Almería": "UD Almería",
+    "Athletic Club": "Athletic Bilbao",
+    "Atlético Madrid": "Atlético Madrid",
+    "Barcelona": "FC Barcelona",
+    "Celta Vigo": "RC Celta de Vigo",
+    "Cádiz": "Cádiz CF",
+    "Córdoba CF": "Córdoba CF",
+    "Deportivo Alavés": "Deportivo Alavés",
+    "Eibar": "SD Eibar",
+    "Espanyol": "RCD Espanyol",
+    "Getafe": "Getafe CF",
+    "Granada": "Granada CF",
+    "Huesca": "SD Huesca",
+    "Hércules": "Hércules CF",
+    "Las Palmas": "UD Las Palmas",
+    "Leganés": "CD Leganés",
+    "Levante UD": "Levante UD",
+    "Mallorca": "RCD Mallorca",
+    "Málaga": "Málaga CF",
+    "Osasuna": "CA Osasuna",
+    "RC Deportivo La Coruña": "Deportivo de La Coruña",
+    "Racing Santander": "Racing de Santander",
+    "Rayo Vallecano": "Rayo Vallecano",
+    "Real Betis": "Real Betis",
+    "Real Madrid": "Real Madrid CF",
+    "Real Sociedad": "Real Sociedad",
+    "Real Valladolid": "Real Valladolid",
+    "Sevilla": "Sevilla FC",
+    "Sporting Gijón": "Sporting de Gijón",
+    "Valencia": "Valencia CF",
+    "Villarreal": "Villarreal CF",
+}
+
 
 def _load_overrides() -> dict:
     if not OVERRIDES_PATH.exists():
@@ -68,106 +102,61 @@ def _load_overrides() -> dict:
         return yaml.safe_load(f) or {}
 
 
-def _search_candidates(query: str, client: httpx.Client) -> list[str]:
-    resp = client.get(
-        WIKIDATA_API,
-        params={
-            "action": "wbsearchentities",
-            "search": query,
-            "language": "en",
-            "type": "item",
-            "limit": 5,
-            "format": "json",
-        },
-    )
-    resp.raise_for_status()
-    return [c["id"] for c in resp.json().get("search", [])]
-
-
-def _looks_like_football_club(qid: str, client: httpx.Client) -> bool:
-    """A candidate counts as the club if it's typed as one of the known
-    football-club QIDs, OR - the more reliable signal in practice, since
-    Wikidata's club typing is inconsistent - it has a logo image (P154),
-    which a city/place/person entity with the same short name won't have.
+def _wikipedia_crest(article_title: str, client: httpx.Client) -> dict | None:
+    """REST summary gives the infobox thumbnail directly; imageinfo on the
+    same filename then gives license/author for the credits page.
     """
-    # wbgetclaims only accepts a single "property" value, so fetch all
-    # claims for the entity instead of trying "P31|P154" (which silently
-    # returns nothing for both).
-    claims_resp = client.get(
-        WIKIDATA_API,
-        params={"action": "wbgetclaims", "entity": qid, "format": "json"},
-    )
-    claims = claims_resp.json().get("claims", {})
-    instances = claims.get("P31", [])
-    for inst in instances:
-        value = inst.get("mainsnak", {}).get("datavalue", {}).get("value", {})
-        if value.get("id") in FOOTBALL_CLUB_QIDS:
-            return True
-    return bool(claims.get("P154"))
-
-
-def _search_club_qid(name: str, client: httpx.Client) -> str | None:
-    # Try a disambiguated query first ("Huesca football club" surfaces the
-    # club over the city), then fall back to the bare team name.
-    for query in (f"{name} football club", name):
-        for qid in _search_candidates(query, client):
-            time.sleep(SLEEP_BETWEEN_REQUESTS_S)
-            if _looks_like_football_club(qid, client):
-                return qid
-    return None
-
-
-# A club's CURRENT crest is a live trademark and essentially never sits on
-# Commons under a free license - a blind Commons full-text search for
-# "<name> logo" was tried as a fallback and rejected: it returned wrong
-# clubs entirely (Athletic Club -> a Moroccan club of a similar name),
-# wrong sports (Sevilla/Valencia -> American-football team logos), and kit
-# texture diagrams instead of crests. Wikidata's P154 claim is kept as the
-# only source because, unlike free-text search, it's a specific claim a
-# Wikidata editor attached to the exact club entity - still occasionally a
-# historical crest instead of the current one, but never the wrong club.
-
-
-def _wikidata_logo_filename(qid: str, client: httpx.Client) -> str | None:
-    resp = client.get(
-        WIKIDATA_API,
-        params={"action": "wbgetclaims", "entity": qid, "property": "P154", "format": "json"},
-    )
-    claims = resp.json().get("claims", {}).get("P154", [])
-    if not claims:
+    resp = client.get(WIKIPEDIA_REST_SUMMARY.format(title=article_title.replace(" ", "_")))
+    if resp.status_code != 200:
         return None
-    return claims[0]["mainsnak"]["datavalue"]["value"]
-
-
-def _commons_image_info(filename: str, client: httpx.Client) -> dict | None:
-    resp = client.get(
-        COMMONS_API,
-        params={
-            "action": "query",
-            "titles": f"File:{filename}",
-            "prop": "imageinfo",
-            "iiprop": "url|extmetadata",
-            "iiurlwidth": THUMB_WIDTH_PX,
-            "format": "json",
-        },
-    )
-    pages = resp.json().get("query", {}).get("pages", {})
-    page = next(iter(pages.values()), {})
-    info = (page.get("imageinfo") or [None])[0]
-    if not info:
+    summary = resp.json()
+    thumb = summary.get("thumbnail", {}) or {}
+    thumb_url = thumb.get("source")
+    if not thumb_url:
         return None
-    meta = info.get("extmetadata", {})
+
+    # Extract the Commons/enwiki filename from the thumbnail URL, e.g.
+    # ".../wikipedia/en/thumb/9/98/Foo_logo.svg/330px-Foo_logo.svg.png"
+    # -> "Foo_logo.svg" (the path segment right before the "NNNpx-" one).
+    parts = thumb_url.split("/")
+    filename = None
+    for i, part in enumerate(parts):
+        if re.match(r"^\d+px-", part) and i > 0:
+            filename = parts[i - 1]
+            break
+    license_name = None
+    artist_html = None
+    if filename:
+        info_resp = client.get(
+            WIKIPEDIA_API,
+            params={
+                "action": "query",
+                "titles": f"File:{filename}",
+                "prop": "imageinfo",
+                "iiprop": "extmetadata",
+                "format": "json",
+            },
+        )
+        pages = info_resp.json().get("query", {}).get("pages", {})
+        page = next(iter(pages.values()), {})
+        info = (page.get("imageinfo") or [None])[0]
+        if info:
+            meta = info.get("extmetadata", {})
+            license_name = meta.get("LicenseShortName", {}).get("value") or "Non-free logo"
+            artist_html = meta.get("Artist", {}).get("value")
+
     return {
-        "thumb_url": info.get("thumburl"),
-        "license": meta.get("LicenseShortName", {}).get("value"),
-        "artist_html": meta.get("Artist", {}).get("value"),
+        "thumb_url": thumb_url,
+        "license": license_name or "Non-free logo (Wikipedia)",
+        "artist_html": artist_html,
+        "article": summary.get("title", article_title),
     }
 
 
 def build_team_crests(club_names: list[str], force: bool = False) -> dict:
     """club_names: every distinct club team name seen in the browsable
-    data (national teams are handled separately via NATIONAL_TEAM_ISO,
-    no network call needed). Returns the combined {team_name: entry} dict
+    data (national teams are handled separately via NATIONAL_TEAM_ISO, no
+    network call needed). Returns the combined {team_name: entry} dict
     covering both clubs and national teams, and writes it to
     api/app/data/teams.json.
     """
@@ -185,39 +174,41 @@ def build_team_crests(club_names: list[str], force: bool = False) -> dict:
     to_fetch = [n for n in club_names if n not in existing or existing.get(n) is None]
     print(f"Fetching crests for {len(to_fetch)} new clubs (of {len(club_names)} total)...")
 
+    resolved_log = []
     with httpx.Client(headers={"User-Agent": USER_AGENT}, timeout=15.0) as client:
-        for i, name in enumerate(to_fetch):
+        for name in to_fetch:
             override = overrides.get(name)
             if override == "skip":
                 result[name] = None
                 continue
 
-            qid = override if override else None
+            title = override or TEAM_TO_WIKIPEDIA_TITLE.get(name)
+            if title is None:
+                print(f"  [warn] no Wikipedia title mapped for {name!r} - add it to TEAM_TO_WIKIPEDIA_TITLE or configs/team_overrides.yaml")
+                result[name] = None
+                continue
+
             try:
-                filename = None
-                if qid is None:
-                    qid = _search_club_qid(name, client)
-                if qid is not None:
-                    filename = _wikidata_logo_filename(qid, client)
-                if filename is None:
+                crest = _wikipedia_crest(title, client)
+                if crest is None:
                     result[name] = None
-                    continue
-                info = _commons_image_info(filename, client)
-                if info is None or not info.get("thumb_url"):
-                    result[name] = None
-                    continue
-                result[name] = {"kind": "club", **info, "wikidata_id": qid}
+                else:
+                    result[name] = {"kind": "club", "source": "wikipedia", **crest}
+                    resolved_log.append((name, crest["article"]))
             except Exception as exc:  # noqa: BLE001 - one bad club shouldn't kill the run
-                print(f"  [warn] {name} failed: {exc}")
+                print(f"  [warn] {name} ({title}) failed: {exc}")
                 result[name] = None
 
             time.sleep(SLEEP_BETWEEN_REQUESTS_S)
-            if (i + 1) % 10 == 0:
-                print(f"  {i + 1}/{len(to_fetch)}")
 
     OUT_PATH.parent.mkdir(parents=True, exist_ok=True)
     with open(OUT_PATH, "w") as f:
         json.dump(result, f, indent=2, ensure_ascii=False)
+
+    if resolved_log:
+        print("Resolved club -> Wikipedia article:")
+        for name, article in resolved_log:
+            print(f"  {name!r:30s} -> {article!r}")
 
     n_found = sum(1 for v in result.values() if v and v.get("kind") == "club")
     print(f"Saved {len(result)} team entries ({n_found} clubs with a crest, {len(NATIONAL_TEAM_ISO)} national flags) -> {OUT_PATH}")
@@ -230,4 +221,4 @@ if __name__ == "__main__":
     shots = pd.read_parquet(ROOT / "api" / "app" / "data" / "shots.parquet")
     all_teams = sorted(set(shots["home_team"]) | set(shots["away_team"]))
     clubs = [t for t in all_teams if t not in NATIONAL_TEAM_ISO]
-    build_team_crests(clubs)
+    build_team_crests(clubs, force=True)

@@ -235,3 +235,20 @@ def test_teams_covers_every_team_seen_in_matches(client):
     assert all_team_names.issubset(teams.keys())
     # World Cup teams are all national sides with a flag, never a club crest
     assert all(teams[name]["kind"] == "national" for name in all_team_names)
+
+
+def test_teams_la_liga_clubs_all_have_a_crest(client):
+    matches = client.get("/competitions/11/matches").json()
+    resp = client.get("/teams")
+    teams = resp.json()
+    la_liga_clubs = {m["home_team"] for m in matches} | {m["away_team"] for m in matches}
+    missing = [name for name in la_liga_clubs if not (teams.get(name) or {}).get("thumb_url")]
+    assert not missing, f"clubs with no crest: {missing}"
+    assert "Real_Madrid" in teams["Real Madrid"]["thumb_url"] or "Real Madrid" in teams["Real Madrid"]["article"]
+
+
+def test_shots_carry_player_photo_url_when_available(client):
+    shots = client.get("/matches/3869685/shots").json()
+    messi_shots = [s for s in shots if s.get("player_nickname") == "Lionel Messi"]
+    assert messi_shots, "expected at least one Messi shot in this match"
+    assert any(s.get("player_photo_url") for s in messi_shots)

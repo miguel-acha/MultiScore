@@ -47,7 +47,7 @@ export default function Model() {
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <ModelStatCard title="Modelo en producción (geo)" name={info.geo_model} />
-        <ModelStatCard title="Modelo en producción (con defensores)" name={info.full_model} calibrated={info.full_model_calibrated} />
+        <ModelStatCard title="MultiScore (modelo en producción)" name={info.full_model} calibrated={info.full_model_calibrated} />
       </div>
 
       <div className="clip-menu border border-(--color-border) bg-(--color-surface) p-5">

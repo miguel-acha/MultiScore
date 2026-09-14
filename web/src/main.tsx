@@ -14,6 +14,7 @@ import Simulator from "./pages/Simulator";
 import Model from "./pages/Model";
 import Players from "./pages/Players";
 import PlayerView from "./pages/PlayerView";
+import Credits from "./pages/Credits";
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
@@ -31,6 +32,7 @@ createRoot(document.getElementById("root")!).render(
           <Route path="jugador/:playerId" element={<PlayerView />} />
           <Route path="simulador" element={<Simulator />} />
           <Route path="modelo" element={<Model />} />
+          <Route path="creditos" element={<Credits />} />
         </Route>
       </Routes>
     </BrowserRouter>

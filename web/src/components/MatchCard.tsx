@@ -14,8 +14,8 @@ export default function MatchCard({ match, index = 0 }: { match: Match; index?: 
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: Math.min(index * 0.04, 0.4), duration: 0.35 }}
     >
-      <Link to={`/partido/${match.match_id}`} className="block">
-        <SpotlightCard className="interactive clip-menu group flex flex-col gap-3 border border-(--color-border) bg-(--color-surface) p-4 hover:border-(--color-lime)/50 hover:shadow-(--shadow-glow-lime)">
+      <Link to={`/partido/${match.match_id}`} className="interactive block">
+        <SpotlightCard className="lift clip-menu group flex flex-col gap-3 border border-(--color-border) bg-(--color-surface) p-4 hover:border-(--color-lime)/50 hover:shadow-(--shadow-glow-lime)">
           <div className="flex items-center justify-between text-xs text-(--color-text-faint)">
             <span>{formatDate(match.match_date)}</span>
             <span>{match.competition_stage ?? match.season_label}</span>

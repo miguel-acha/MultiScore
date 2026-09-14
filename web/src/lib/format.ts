@@ -58,6 +58,11 @@ export function positionAbbr(position: string | null | undefined): string | null
   return POSITION_ABBR[position] ?? null;
 }
 
+export function stripHtml(html: string | null | undefined): string {
+  if (!html) return "";
+  return html.replace(/<[^>]*>/g, "").trim();
+}
+
 export function formatDate(iso: string | null): string {
   if (!iso) return "";
   const d = new Date(iso);

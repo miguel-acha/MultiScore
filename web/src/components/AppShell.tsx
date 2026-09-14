@@ -34,6 +34,12 @@ export default function AppShell() {
             <Outlet />
           </PageTransition>
         </AnimatePresence>
+
+        <footer className="mt-12 pb-4 text-center">
+          <Link to="/creditos" className="interactive text-xs text-(--color-text-faint) hover:text-(--color-text-dim)">
+            Créditos de imágenes
+          </Link>
+        </footer>
       </div>
 
       <MobileNavBar />

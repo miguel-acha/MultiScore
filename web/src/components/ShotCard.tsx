@@ -2,7 +2,7 @@ import { motion } from "motion/react";
 import { Link } from "react-router";
 import type { Shot } from "../api";
 import { outcomeStyle } from "../lib/outcomes";
-import { initials } from "../lib/format";
+import PlayerAvatar from "./PlayerAvatar";
 
 export default function ShotCard({
   shot,
@@ -31,9 +31,7 @@ export default function ShotCard({
           : "border-(--color-border) bg-(--color-surface) hover:border-(--color-border-strong)"
       }`}
     >
-      <div className="clip-menu-sm flex h-9 w-9 shrink-0 items-center justify-center bg-(--color-surface-3) text-xs font-semibold text-(--color-text-dim)">
-        {initials(name)}
-      </div>
+      <PlayerAvatar photoUrl={shot.player_photo_url} name={name} size="sm" />
       <div className="min-w-0 flex-1">
         {shot.player_id != null ? (
           <Link
@@ -49,7 +47,7 @@ export default function ShotCard({
         <div className="flex items-center gap-1.5 text-xs text-(--color-text-faint)">
           <span>{shot.minute}&apos; · {shot.team}</span>
         </div>
-        <span className="text-xs text-(--color-text-dim)">xG {shot.xg_full.toFixed(2)}</span>
+        <span className="text-xs text-(--color-text-dim)">xG MultiScore {shot.xg_full.toFixed(2)}</span>
       </div>
       <span
         className="shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold"

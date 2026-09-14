@@ -3,7 +3,7 @@ import { Link, useParams, useSearchParams } from "react-router";
 import { motion } from "motion/react";
 import { ArrowLeft } from "lucide-react";
 import { api } from "../api";
-import type { Match, Shot, Player } from "../api";
+import type { Match, Shot } from "../api";
 import HalfPitch from "../components/HalfPitch";
 import type { PitchPlayer } from "../components/HalfPitch";
 import ShotCard from "../components/ShotCard";
@@ -20,7 +20,6 @@ export default function MatchView() {
   const [match, setMatch] = useState<Match | null>(null);
   const [shots, setShots] = useState<Shot[]>([]);
   const [selectedShotId, setSelectedShotId] = useState<string | null>(null);
-  const [shotPlayer, setShotPlayer] = useState<Player | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -51,13 +50,6 @@ export default function MatchView() {
     setSelectedShotId(eventId);
     document.querySelector(`[data-event-id="${eventId}"]`)?.scrollIntoView({ block: "nearest", behavior: "smooth" });
   }
-
-  useEffect(() => {
-    setShotPlayer(null);
-    if (selectedShot?.player_id != null) {
-      api.player(selectedShot.player_id).then(setShotPlayer).catch(() => setShotPlayer(null));
-    }
-  }, [selectedShot?.player_id]);
 
   const pitchPlayers: PitchPlayer[] = useMemo(() => {
     if (!selectedShot?.freeze_frame) return [];
@@ -133,11 +125,7 @@ export default function MatchView() {
           {selectedShot ? (
             <>
               <div className="flex w-full items-center gap-3">
-                {shotPlayer ? (
-                  <PlayerAvatar player={shotPlayer} size="md" jerseyNumber={selectedShot.jersey_number} />
-                ) : (
-                  <Skeleton className="h-14 w-14" />
-                )}
+                <PlayerAvatar photoUrl={selectedShot.player_photo_url} name={selectedShot.player_nickname ?? selectedShot.player ?? ""} size="md" jerseyNumber={selectedShot.jersey_number} />
                 <div>
                   {selectedShot.player_id != null ? (
                     <Link to={`/jugador/${selectedShot.player_id}`} className="interactive font-semibold hover:text-(--color-lime)">
@@ -161,9 +149,9 @@ export default function MatchView() {
               />
 
               <div className="flex flex-wrap justify-center gap-6">
-                <XgMeter valuePct={selectedShot.xg_geo * 100} label="xG sin defensores" size={120} />
-                <XgMeter valuePct={selectedShot.xg_full * 100} label="xG con defensores" size={140} />
-                <XgMeter valuePct={(selectedShot.statsbomb_xg ?? 0) * 100} label="xG StatsBomb" size={120} />
+                <XgMeter valuePct={selectedShot.xg_geo * 100} label="MultiScore sin defensores" size={120} />
+                <XgMeter valuePct={selectedShot.xg_full * 100} label="MultiScore" size={140} />
+                <XgMeter valuePct={(selectedShot.statsbomb_xg ?? 0) * 100} label="StatsBomb" size={120} />
               </div>
 
               <p className="text-center text-sm text-(--color-text-dim)">
@@ -172,12 +160,6 @@ export default function MatchView() {
                   {outcomeStyle(selectedShot.shot_outcome, selectedShot.is_goal === 1).label}
                 </span>
               </p>
-              {shotPlayer?.photo?.artist_html && (
-                <p
-                  className="text-xs text-(--color-text-faint)"
-                  dangerouslySetInnerHTML={{ __html: `Foto: ${shotPlayer.photo.artist_html} · ${shotPlayer.photo.license ?? ""}` }}
-                />
-              )}
             </>
           ) : (
             <p className="text-(--color-text-dim)">Selecciona un disparo.</p>

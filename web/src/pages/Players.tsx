@@ -1,7 +1,13 @@
 // Player ranking: search + sort over every player who took a shot in the
 // browsable data, so there's finally somewhere to see a player's photo,
 // stats and shots instead of just their name popping up inside a match.
-import { useEffect, useState } from "react";
+//
+// Fetches the full list ONCE (it's ~955 rows, a few hundred KB) and does
+// every search/sort/pagination client-side - the earlier version re-fetched
+// on every keystroke, which meant blanking the whole grid back to a
+// skeleton mid-search (visually indistinguishable from "broken") and
+// re-running the mount animation on every reorder.
+import { useDeferredValue, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router";
 import { motion } from "motion/react";
 import { Search, TrendingUp, TrendingDown } from "lucide-react";
@@ -19,24 +25,40 @@ const SORTS: [TeamSort, string][] = [
   ["overperf", "Sobre lo esperado"],
 ];
 
+const SORT_KEY: Record<TeamSort, (p: PlayerListItem) => number> = {
+  goals: (p) => p.goals,
+  xg: (p) => p.xg_total,
+  shots: (p) => p.shots,
+  overperf: (p) => p.goals_minus_xg,
+};
+
+const PAGE_SIZE = 60;
+
 export default function Players() {
-  const [players, setPlayers] = useState<PlayerListItem[] | null>(null);
+  const [allPlayers, setAllPlayers] = useState<PlayerListItem[] | null>(null);
   const [query, setQuery] = useState("");
+  const deferredQuery = useDeferredValue(query);
   const [sort, setSort] = useState<TeamSort>("goals");
+  const [visible, setVisible] = useState(PAGE_SIZE);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    setPlayers(null);
-    const handle = setTimeout(() => {
-      api
-        .players({ q: query || undefined, sort })
-        .then(setPlayers)
-        .catch((e) => setError(String(e)));
-    }, 250);
-    return () => clearTimeout(handle);
-  }, [query, sort]);
+    api.players({ sort: "goals" }).then(setAllPlayers).catch((e) => setError(String(e)));
+  }, []);
+
+  const filtered = useMemo(() => {
+    if (!allPlayers) return null;
+    const q = deferredQuery.trim().toLowerCase();
+    const rows = q
+      ? allPlayers.filter((p) => p.name.toLowerCase().includes(q) || (p.nickname ?? "").toLowerCase().includes(q))
+      : allPlayers;
+    const key = SORT_KEY[sort];
+    return [...rows].sort((a, b) => key(b) - key(a));
+  }, [allPlayers, deferredQuery, sort]);
 
   if (error) return <div className="text-(--color-rival)">Error: {error}</div>;
+
+  const page = filtered?.slice(0, visible) ?? null;
 
   return (
     <div className="flex flex-col gap-6">
@@ -68,19 +90,29 @@ export default function Players() {
         ))}
       </div>
 
-      {!players ? (
+      {!page ? (
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {Array.from({ length: 9 }).map((_, i) => (
             <Skeleton key={i} className="h-32 w-full" />
           ))}
         </div>
       ) : (
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {players.map((p, i) => (
-            <PlayerCard key={p.player_id} player={p} index={i} />
-          ))}
-          {players.length === 0 && <p className="text-(--color-text-dim)">Sin resultados.</p>}
-        </div>
+        <>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {page.map((p, i) => (
+              <PlayerCard key={p.player_id} player={p} index={i} />
+            ))}
+          </div>
+          {page.length === 0 && <p className="text-(--color-text-dim)">Sin resultados.</p>}
+          {filtered && filtered.length > visible && (
+            <button
+              onClick={() => setVisible((v) => v + PAGE_SIZE)}
+              className="interactive clip-menu-sm mx-auto border border-(--color-border) px-5 py-2 text-sm text-(--color-text-dim) hover:border-(--color-lime) hover:text-(--color-lime)"
+            >
+              Ver más ({filtered.length - visible} restantes)
+            </button>
+          )}
+        </>
       )}
     </div>
   );
@@ -89,9 +121,14 @@ export default function Players() {
 function PlayerCard({ player, index }: { player: PlayerListItem; index: number }) {
   const over = player.goals_minus_xg;
   return (
-    <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: Math.min(index * 0.03, 0.3) }}>
+    <motion.div
+      layout="position"
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: Math.min(index * 0.02, 0.2), layout: { duration: 0.25 } }}
+    >
       <Link to={`/jugador/${player.player_id}`} className="interactive block">
-        <SpotlightCard className="clip-menu flex h-full flex-col gap-3 border border-(--color-border) bg-(--color-surface) p-4 hover:border-(--color-lime)/50 hover:shadow-(--shadow-glow-lime)">
+        <SpotlightCard className="lift clip-menu flex h-full flex-col gap-3 border border-(--color-border) bg-(--color-surface) p-4 hover:border-(--color-lime)/50 hover:shadow-(--shadow-glow-lime)">
           <div className="flex items-center gap-3">
             <PlayerAvatar player={player} size="md" />
             <div className="min-w-0 flex-1">

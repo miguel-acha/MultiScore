@@ -86,17 +86,30 @@ body {
   font-style: italic;
 }
 
-/* Standard interactive affordance: every clickable surface gets this. */
+/* Standard interactive affordance: every clickable surface gets this.
+   IMPORTANT: hover/active never transform `.interactive` itself - if the
+   hovered element moves away from the pointer, the pointer ends up
+   outside its new bounding box, firing mouseleave -> the element moves
+   back -> mouseenter fires again -> flicker, forever, at the bottom edge
+   of any card. The lift/press motion instead applies to a `.lift` CHILD
+   (see PlayerCard, MatchCard, CompetitionCard, Hub tiles), which never
+   affects the parent's hit area. Cards without a `.lift` child are simply
+   unaffected by these two rules - only color/border/shadow transitions
+   apply to them via `.interactive` directly. */
 .interactive {
-  transition: transform 180ms ease, border-color 180ms ease, box-shadow 180ms ease, background-color 180ms ease, color 180ms ease;
+  transition: border-color 180ms ease, box-shadow 180ms ease, background-color 180ms ease, color 180ms ease;
 }
 
-.interactive:hover {
+.interactive:hover > .lift {
   transform: translateY(-2px);
 }
 
-.interactive:active {
+.interactive:active > .lift {
   transform: scale(0.97);
+}
+
+.lift {
+  transition: transform 180ms ease;
 }
 
 .interactive:focus-visible {

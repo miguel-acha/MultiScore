@@ -51,6 +51,7 @@ class ShotOut(BaseModel):
     player_id: int | None = None
     player_nickname: str | None = None
     jersey_number: int | None = None
+    player_photo_url: str | None = None
     team: str | None
     shot_outcome: str | None
     is_goal: int
@@ -145,7 +146,8 @@ class TeamCrestOut(BaseModel):
     thumb_url: str | None = None
     license: str | None = None
     artist_html: str | None = None
-    wikidata_id: str | None = None
+    source: str | None = None
+    article: str | None = None
     iso2: str | None = None
 
 

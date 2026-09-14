@@ -53,3 +53,24 @@ bootstrap:
   # Resampling is done by match_id (not by individual shot) to respect the
   # correlation between shots in the same match.
   group_column: "match_id"
+
+# Synthetic empty-net shots, added ONLY to the "full" model's TRAINING
+# split (never val/test/external_test - those stay 100% real shots for
+# every reported metric). Real La Liga shots with an open goal are almost
+# never a truly empty net from distance (usually a recovering keeper or a
+# freeze frame that's missing the keeper), so the model never saw the
+# simulator's actual "nobody within 40m, unpressured" scenario and badly
+# underscored it (e.g. 27m, dead center, empty net: 16% instead of a
+# near-certain goal). See ml/multiscore/synthetic.py.
+synthetic_empty_net:
+  enabled: true
+  n: 400
+  weight: 4.0 # per-row sample_weight multiplier - 400 synthetic positions
+    # are a small fraction of the ~14k real training rows, so without this
+    # they're outvoted by the mass of real long-range shots (almost all
+    # misses, since a real "open goal" at range is essentially never a
+    # genuinely empty net - see synthetic.py's module docstring) and the
+    # augmentation barely moves predictions at 25-30m.
+  sigma_foot_deg: 6 # angular shooting error std-dev, feet, StatsBomb degrees
+  sigma_head_deg: 12
+  mishit: 0.05 # fraction of clean-look shots that are mishit regardless of angle

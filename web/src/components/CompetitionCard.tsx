@@ -23,7 +23,7 @@ export default function CompetitionCard({
       onClick={onClick}
       className="interactive text-left"
     >
-      <SpotlightCard className="clip-menu flex h-full flex-col justify-between gap-6 border border-(--color-border) bg-gradient-to-br from-(--color-surface-2) to-(--color-surface) p-6 hover:border-(--color-lime)/50 hover:shadow-(--shadow-glow-lime-lg)">
+      <SpotlightCard className="lift clip-menu flex h-full flex-col justify-between gap-6 border border-(--color-border) bg-gradient-to-br from-(--color-surface-2) to-(--color-surface) p-6 hover:border-(--color-lime)/50 hover:shadow-(--shadow-glow-lime-lg)">
         <div className="flex items-center justify-between">
           {isWorldCup ? <Globe size={28} className="text-(--color-lime)" /> : <Trophy size={28} className="text-(--color-lime)" />}
           <span className="text-xs text-(--color-text-faint)">{competition.seasons.length} temporada{totalMatches !== 1 ? "s" : ""}</span>

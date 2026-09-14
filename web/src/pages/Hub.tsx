@@ -84,7 +84,7 @@ export default function Hub() {
           >
             <Link to={tile.to} className="interactive block">
               <SpotlightCard
-                className={`clip-menu flex items-center justify-between gap-4 border border-(--color-border) bg-(--color-surface) p-6 hover:border-(--color-lime)/50 hover:shadow-(--shadow-glow-lime) ${
+                className={`lift clip-menu flex items-center justify-between gap-4 border border-(--color-border) bg-(--color-surface) p-6 hover:border-(--color-lime)/50 hover:shadow-(--shadow-glow-lime) ${
                   tile.big ? "bg-gradient-to-br from-(--color-lime)/10 to-(--color-surface)" : ""
                 }`}
               >

@@ -121,3 +121,67 @@ def test_more_defenders_in_the_way_never_increases_xg(service):
     xg_one = service.predict(one_defender)["xg_full"]
     xg_three = service.predict(three_defenders)["xg_full"]
     assert xg_three <= xg_one
+
+
+# ---- empty-net-from-distance (v3.3): the model underscored an unopposed
+# shot the farther it was hit from, because real "open goal" shots in the
+# data are almost never a genuinely empty net at range (see
+# ml/multiscore/synthetic.py) - these pin down the physically-expected
+# floor at three distances an empty-net simulator preset can produce.
+
+
+def _x_for_distance_m(distance_m: float) -> float:
+    return 120.0 - distance_m / 0.9144
+
+
+def test_empty_net_stays_high_probability_with_distance(service):
+    for distance_m, floor in [(16.5, 0.85), (25.0, 0.70), (30.0, 0.55)]:
+        request = _PredictRequest(shooter_x=_x_for_distance_m(distance_m), shooter_y=40.0, freeze_frame=[])
+        xg = service.predict(request)["xg_full"]
+        assert xg >= floor, f"empty net at {distance_m}m scored {xg:.3f}, expected >= {floor}"
+
+
+def test_empty_net_xg_decreases_monotonically_with_distance(service):
+    distances = [11.0, 16.5, 20.0, 25.0, 30.0, 35.0]
+    xgs = [
+        service.predict(_PredictRequest(shooter_x=_x_for_distance_m(d), shooter_y=40.0, freeze_frame=[]))["xg_full"]
+        for d in distances
+    ]
+    assert xgs == sorted(xgs, reverse=True), f"empty-net xG isn't monotonically decreasing with distance: {list(zip(distances, xgs))}"
+
+
+def test_goalkeeper_on_line_meaningfully_lowers_empty_net_xg(service):
+    # A real goalkeeper standing on the line at a plausible shooting
+    # distance should still cut the scoring probability by a wide margin -
+    # confirms the synthetic empty-net augmentation didn't wash out how
+    # much the goalkeeper feature itself matters.
+    x = _x_for_distance_m(16.5)
+    empty = _PredictRequest(shooter_x=x, shooter_y=40.0, freeze_frame=[])
+    with_gk = _PredictRequest(shooter_x=x, shooter_y=40.0, freeze_frame=[_Player(x=119.0, y=40.0, is_goalkeeper=True)])
+    xg_empty = service.predict(empty)["xg_full"]
+    xg_with_gk = service.predict(with_gk)["xg_full"]
+    assert xg_empty - xg_with_gk > 0.3, f"empty net {xg_empty:.3f} vs goalkeeper-on-line {xg_with_gk:.3f}: gap too small"
+
+
+def test_synthetic_augmentation_does_not_meaningfully_hurt_real_test_metrics():
+    import json
+    from pathlib import Path
+
+    train_results_path = Path(__file__).resolve().parents[1] / "reports" / "train_results.json"
+    if not train_results_path.exists():
+        pytest.skip("reports/train_results.json not found - run `uv run python -m multiscore.train` first.")
+    with open(train_results_path) as f:
+        results = json.load(f)
+
+    selected = results["_selected_production_model"]
+    ablation = results.get("_synthetic_augmentation_ablation", {})
+    no_synth_key = f"{selected}_no_synthetic"
+    if no_synth_key not in ablation:
+        pytest.skip(f"No synthetic-augmentation ablation entry for {selected}.")
+
+    with_synth = results[selected]["test_logloss"]
+    without_synth = ablation[no_synth_key]["test_logloss"]
+    assert with_synth <= without_synth + 0.005, (
+        f"{selected} test_logloss with synthetic augmentation ({with_synth:.4f}) is worse than "
+        f"without ({without_synth:.4f}) by more than the 0.005 tolerance"
+    )

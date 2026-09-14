@@ -218,8 +218,7 @@ class MultiScoreService:
         rows = self.shots[self.shots["match_id"] == match_id]
         return self._serialize_shot_rows(rows)
 
-    @staticmethod
-    def _serialize_shot_rows(rows: pd.DataFrame) -> list[dict]:
+    def _serialize_shot_rows(self, rows: pd.DataFrame) -> list[dict]:
         records = rows.to_dict(orient="records")
         # freeze_frame round-trips through parquet as a numpy array of dicts;
         # Pydantic/FastAPI can't serialize numpy.ndarray, so convert to a
@@ -230,6 +229,9 @@ class MultiScoreService:
                 record["freeze_frame"] = [
                     {**entry, "location": list(entry["location"])} for entry in ff
                 ]
+            player_id = record.get("player_id")
+            photo = self.player_photos.get(str(int(player_id))) if player_id is not None and not pd.isna(player_id) else None
+            record["player_photo_url"] = photo["thumb_url"] if photo else None
         return records
 
     # ---- game mode: random shot rounds -----------------------------------

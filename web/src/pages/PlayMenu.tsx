@@ -18,7 +18,7 @@ export default function PlayMenu() {
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}>
           <Link to="/jugar/adivina" className="interactive block">
-            <SpotlightCard className="clip-menu flex h-full flex-col gap-4 border border-(--color-border) bg-gradient-to-br from-(--color-surface-2) to-(--color-surface) p-6 hover:border-(--color-lime)/50 hover:shadow-(--shadow-glow-lime)">
+            <SpotlightCard className="lift clip-menu flex h-full flex-col gap-4 border border-(--color-border) bg-gradient-to-br from-(--color-surface-2) to-(--color-surface) p-6 hover:border-(--color-lime)/50 hover:shadow-(--shadow-glow-lime)">
               <Target size={32} className="text-(--color-lime)" />
               <div>
                 <h3 className="font-display text-3xl">ADIVINÁ EL XG</h3>
@@ -37,7 +37,7 @@ export default function PlayMenu() {
 
         <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.08 }}>
           <Link to="/jugar/gol-o-no" className="interactive block">
-            <SpotlightCard className="clip-menu flex h-full flex-col gap-4 border border-(--color-border) bg-gradient-to-br from-(--color-surface-2) to-(--color-surface) p-6 hover:border-(--color-lime)/50 hover:shadow-(--shadow-glow-lime)">
+            <SpotlightCard className="lift clip-menu flex h-full flex-col gap-4 border border-(--color-border) bg-gradient-to-br from-(--color-surface-2) to-(--color-surface) p-6 hover:border-(--color-lime)/50 hover:shadow-(--shadow-glow-lime)">
               <Swords size={32} className="text-(--color-lime)" />
               <div>
                 <h3 className="font-display text-3xl">GOL O NO GOL</h3>

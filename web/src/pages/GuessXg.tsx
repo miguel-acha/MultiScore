@@ -162,7 +162,7 @@ export default function GuessXg() {
               <div className="flex w-full items-center justify-between text-sm">
                 <span className="text-(--color-text-dim)">Tu marca: {guess}%</span>
                 <span className="text-(--color-lime)">
-                  Modelo: <CountUp value={modelPct} suffix="%" />
+                  MultiScore: <CountUp value={modelPct} suffix="%" />
                 </span>
               </div>
               <div className="relative h-2 w-full rounded-full bg-(--color-surface-3)">

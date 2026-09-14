@@ -64,6 +64,7 @@ export interface Shot {
   player_id: number | null;
   player_nickname: string | null;
   jersey_number: number | null;
+  player_photo_url: string | null;
   team: string | null;
   shot_outcome: string | null;
   is_goal: number;
@@ -124,7 +125,8 @@ export interface TeamCrest {
   thumb_url: string | null;
   license: string | null;
   artist_html: string | null;
-  wikidata_id: string | null;
+  source: string | null;
+  article: string | null;
   iso2: string | null;
 }
 

@@ -198,11 +198,11 @@ export default function Simulator() {
           className="clip-menu flex flex-col items-center gap-5 border border-(--color-border) bg-(--color-surface) p-6"
         >
           <span className="text-center text-xs uppercase tracking-wide text-(--color-text-faint)">
-            Probabilidad de gol (con contexto de rivales)
+            xG MultiScore
           </span>
           <XgMeter valuePct={full} size={180} />
           <span className="text-xs text-(--color-text-faint)">
-            Sin mirar a los rivales: <CountUp value={geo} suffix="%" />
+            Sin defensores: <CountUp value={geo} suffix="%" />
             {loading && " · recalculando…"}
           </span>
 

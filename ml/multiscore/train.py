@@ -47,6 +47,7 @@ from multiscore.modeling import (
     monotonic_constraints_vector,
     prepare_frame,
 )
+from multiscore.synthetic import build_synthetic_empty_net
 
 ROOT = Path(__file__).resolve().parents[2]
 PROCESSED_DIR = ROOT / "data" / "processed"
@@ -107,7 +108,7 @@ def _grid_sample(cfg: dict, rng: np.random.Generator, n_trials: int) -> list[dic
     return [dict(zip(keys, combo)) for combo in combos]
 
 
-def train_logistic_regression(X_train, y_train, X_val, y_val, cfg: dict, seed: int):
+def train_logistic_regression(X_train, y_train, X_val, y_val, cfg: dict, seed: int, sample_weight=None):
     candidates = _lr_candidates(cfg)
     best = None
     for params in candidates:
@@ -119,7 +120,7 @@ def train_logistic_regression(X_train, y_train, X_val, y_val, cfg: dict, seed: i
             random_state=seed,
         )
         t0 = time.time()
-        model.fit(X_train, y_train)
+        model.fit(X_train, y_train, sample_weight=sample_weight)
         fit_time = time.time() - t0
         val_pred = model.predict_proba(X_val)[:, 1]
         val_ll = log_loss(y_val, val_pred)
@@ -136,7 +137,8 @@ def train_logistic_regression(X_train, y_train, X_val, y_val, cfg: dict, seed: i
 
 
 def train_xgboost(
-    X_train, y_train, X_val, y_val, cfg: dict, seed: int, n_trials: int, rng, monotone_constraints=None
+    X_train, y_train, X_val, y_val, cfg: dict, seed: int, n_trials: int, rng, monotone_constraints=None,
+    sample_weight=None,
 ):
     candidates = _grid_sample(cfg["xgboost"], rng, n_trials)
     best = None
@@ -157,7 +159,10 @@ def train_xgboost(
             n_jobs=-1,
         )
         t0 = time.time()
-        model.fit(X_train, y_train, eval_set=[(X_train, y_train), (X_val, y_val)], verbose=False)
+        model.fit(
+            X_train, y_train, sample_weight=sample_weight,
+            eval_set=[(X_train, y_train), (X_val, y_val)], verbose=False,
+        )
         fit_time = time.time() - t0
         val_pred = model.predict_proba(X_val)[:, 1]
         val_ll = log_loss(y_val, val_pred)
@@ -178,7 +183,8 @@ def train_xgboost(
 
 
 def train_lightgbm(
-    X_train, y_train, X_val, y_val, cfg: dict, seed: int, n_trials: int, rng, monotone_constraints=None
+    X_train, y_train, X_val, y_val, cfg: dict, seed: int, n_trials: int, rng, monotone_constraints=None,
+    sample_weight=None,
 ):
     candidates = _grid_sample(cfg["lightgbm"], rng, n_trials)
     best = None
@@ -202,6 +208,7 @@ def train_lightgbm(
         model.fit(
             X_train,
             y_train,
+            sample_weight=sample_weight,
             eval_set=[(X_train, y_train), (X_val, y_val)],
             eval_metric=cfg["lightgbm"]["metric"],
             callbacks=[lgb.early_stopping(cfg["lightgbm"]["early_stopping_rounds"], verbose=False)],
@@ -247,6 +254,16 @@ def run_all_variants(seed: int = 42) -> dict:
 
     results = {}
     ablation_results = {}
+    synthetic_ablation = {}
+
+    # Synthetic empty-net rows: computed once (feature extraction doesn't
+    # depend on feature_set_name), added to the "full" TRAINING split only.
+    # See ml/multiscore/synthetic.py for why - real "open goal" shots in the
+    # data almost never mean a genuinely empty net from distance.
+    synth_cfg = cfg.get("synthetic_empty_net", {})
+    synthetic_df = build_synthetic_empty_net(synth_cfg, seed=seed) if synth_cfg.get("enabled") else None
+    if synthetic_df is not None:
+        print(f"\nSynthetic empty-net augmentation: {len(synthetic_df)} rows ({synth_cfg['n']} positions x 2 soft labels)")
 
     for feature_set_name in ("geo", "full"):
         preprocessor = build_preprocessor(feature_set_name)
@@ -258,20 +275,35 @@ def run_all_variants(seed: int = 42) -> dict:
         feature_names = get_onehot_feature_names(preprocessor, feature_set_name)
         constraints = monotonic_constraints_vector(feature_set_name, feature_names)
 
+        # Augment TRAIN ONLY, and only for "full" (the geo model has no
+        # defender features, so "empty net" isn't representable for it).
+        # val/test/external_test are never touched - every reported metric
+        # is measured on real shots only.
+        X_train_aug, y_train_aug, weight_aug = X_train, y_train, np.ones(len(y_train))
+        if feature_set_name == "full" and synthetic_df is not None:
+            X_synth = preprocessor.transform(prepare_frame(synthetic_df, "full"))
+            X_train_aug = np.vstack([X_train, X_synth])
+            y_train_aug = np.concatenate([y_train, synthetic_df["is_goal"].values])
+            weight_aug = np.concatenate([np.ones(len(y_train)), synthetic_df["sample_weight"].values])
+
         trainers = {
-            "logistic_regression": lambda Xtr, Xv: train_logistic_regression(Xtr, y_train, Xv, y_val, cfg, seed),
-            "xgboost": lambda Xtr, Xv, mc=constraints: train_xgboost(
-                Xtr, y_train, Xv, y_val, cfg, seed, cfg["n_hyperparam_trials"], rng, monotone_constraints=mc
+            "logistic_regression": lambda Xtr, Xv, yt=y_train_aug, w=weight_aug: train_logistic_regression(
+                Xtr, yt, Xv, y_val, cfg, seed, sample_weight=w
             ),
-            "lightgbm": lambda Xtr, Xv, mc=constraints: train_lightgbm(
-                Xtr, y_train, Xv, y_val, cfg, seed, cfg["n_hyperparam_trials"], rng, monotone_constraints=mc
+            "xgboost": lambda Xtr, Xv, mc=constraints, yt=y_train_aug, w=weight_aug: train_xgboost(
+                Xtr, yt, Xv, y_val, cfg, seed, cfg["n_hyperparam_trials"], rng, monotone_constraints=mc,
+                sample_weight=w,
+            ),
+            "lightgbm": lambda Xtr, Xv, mc=constraints, yt=y_train_aug, w=weight_aug: train_lightgbm(
+                Xtr, yt, Xv, y_val, cfg, seed, cfg["n_hyperparam_trials"], rng, monotone_constraints=mc,
+                sample_weight=w,
             ),
         }
 
         for family, trainer in trainers.items():
             variant_name = f"{family}_{feature_set_name}"
             print(f"\n=== Training {variant_name} ===")
-            result = trainer(X_train, X_val)
+            result = trainer(X_train_aug, X_val)
             model = result["model"]
 
             inference_ms = measure_inference_time_ms(model, X_test)
@@ -300,7 +332,9 @@ def run_all_variants(seed: int = 42) -> dict:
                 "fit_time_s": result["fit_time_s"],
                 "inference_time_ms_per_shot": inference_ms,
                 "best_iteration": result["best_iteration"],
-                "n_train": len(y_train),
+                "n_train": len(y_train_aug),
+                "n_train_real": len(y_train),
+                "n_train_synthetic": len(y_train_aug) - len(y_train),
                 "n_val": len(y_val),
                 "n_test": len(y_test),
                 "n_external_test": len(y_ext),
@@ -311,16 +345,18 @@ def run_all_variants(seed: int = 42) -> dict:
             )
 
         # Ablation: for the "full" feature set, also train the tree models
-        # WITHOUT monotonic constraints, so the report can show whether
-        # imposing domain knowledge costs or helps predictive performance
-        # (not just whether it fixes the sanity-check failures).
+        # WITHOUT monotonic constraints (same augmented training data as the
+        # constrained variant above, so this isolates the constraint effect
+        # alone), so the report can show whether imposing domain knowledge
+        # costs or helps predictive performance (not just whether it fixes
+        # the sanity-check failures).
         if feature_set_name == "full":
             for family in ("xgboost", "lightgbm"):
                 print(f"\n=== Training {family}_full (ablation: no monotonic constraints) ===")
                 trainer_fn = train_xgboost if family == "xgboost" else train_lightgbm
                 result = trainer_fn(
-                    X_train, y_train, X_val, y_val, cfg, seed, cfg["n_hyperparam_trials"], rng,
-                    monotone_constraints=None,
+                    X_train_aug, y_train_aug, X_val, y_val, cfg, seed, cfg["n_hyperparam_trials"], rng,
+                    monotone_constraints=None, sample_weight=weight_aug,
                 )
                 model = result["model"]
                 test_pred = model.predict_proba(X_test)[:, 1]
@@ -336,6 +372,36 @@ def run_all_variants(seed: int = 42) -> dict:
                     f"{family}_full_unconstrained: val_logloss={result['val_logloss']:.4f} "
                     f"(constrained was {results[f'{family}_full']['val_logloss']:.4f})"
                 )
+
+            # Ablation: the same constrained "full" models, but trained
+            # WITHOUT the synthetic empty-net rows - isolates what the
+            # augmentation itself buys/costs on real (test + external)
+            # metrics, cited in the report's results-analysis section.
+            if synthetic_df is not None:
+                for family in ("logistic_regression", "xgboost", "lightgbm"):
+                    print(f"\n=== Training {family}_full (ablation: no synthetic augmentation) ===")
+                    if family == "logistic_regression":
+                        result = train_logistic_regression(X_train, y_train, X_val, y_val, cfg, seed)
+                    else:
+                        trainer_fn = train_xgboost if family == "xgboost" else train_lightgbm
+                        result = trainer_fn(
+                            X_train, y_train, X_val, y_val, cfg, seed, cfg["n_hyperparam_trials"], rng,
+                            monotone_constraints=constraints,
+                        )
+                    model = result["model"]
+                    test_pred = model.predict_proba(X_test)[:, 1]
+                    ext_pred = model.predict_proba(X_ext)[:, 1]
+                    synthetic_ablation[f"{family}_full_no_synthetic"] = {
+                        "val_logloss": result["val_logloss"],
+                        "test_logloss": float(log_loss(y_test, test_pred)),
+                        "test_auc": float(roc_auc_score(y_test, test_pred)),
+                        "external_test_logloss": float(log_loss(y_ext, ext_pred)),
+                        "external_test_auc": float(roc_auc_score(y_ext, ext_pred)),
+                    }
+                    print(
+                        f"{family}_full_no_synthetic: test_logloss={synthetic_ablation[f'{family}_full_no_synthetic']['test_logloss']:.4f} "
+                        f"(with synthetic was {results[f'{family}_full']['test_logloss']:.4f})"
+                    )
 
     # Pick the production model: best "full" variant by validation log-loss.
     full_variants = {k: v for k, v in results.items() if v["feature_set"] == "full"}
@@ -381,6 +447,7 @@ def run_all_variants(seed: int = 42) -> dict:
         print(f"Isotonic calibration did not improve ECE ({ece_raw:.4f} -> {ece_cal:.4f}); keeping raw model.")
 
     results["_monotonic_constraints_ablation"] = ablation_results
+    results["_synthetic_augmentation_ablation"] = synthetic_ablation
 
     results["_dataset_info"] = {
         "la_liga_all_rows": splits["la_liga_all_rows"],
@@ -388,6 +455,12 @@ def run_all_variants(seed: int = 42) -> dict:
         "wc_all_rows": splits["wc_all_rows"],
         "wc_with_freeze_frame_rows": splits["wc_with_freeze_frame_rows"],
         "note": "All variants (geo and full) trained/evaluated only on shots with a usable freeze frame, for a fair comparison.",
+        "synthetic_empty_net": {
+            **synth_cfg,
+            "note": "Added to the 'full' model's TRAINING split only (soft-labeled via sample_weight, see multiscore/synthetic.py); val/test/external_test are always 100% real shots.",
+        }
+        if synthetic_df is not None
+        else {"enabled": False},
     }
 
     with open(REPORTS_DIR / "train_results.json", "w") as f:

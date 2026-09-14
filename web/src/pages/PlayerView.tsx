@@ -55,9 +55,6 @@ export default function PlayerView() {
             <span>{stats.team ?? "—"}</span>
             {player.jersey_number != null && <span>· #{player.jersey_number}</span>}
           </div>
-          {player.photo?.artist_html && (
-            <p className="mt-2 text-xs text-(--color-text-faint)" dangerouslySetInnerHTML={{ __html: `Foto: ${player.photo.artist_html} · ${player.photo.license ?? ""}` }} />
-          )}
         </div>
       </motion.div>
 
