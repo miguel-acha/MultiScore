@@ -133,7 +133,10 @@ def build_player_photos(players: pd.DataFrame, force: bool = False) -> dict:
 
     with httpx.Client(headers={"User-Agent": USER_AGENT}, timeout=15.0) as client:
         for i, row in enumerate(to_fetch.itertuples()):
-            pid = str(row.player_id)
+            # str(int(...)) rather than str(...) so a stray float64 dtype
+            # (e.g. "5503.0") can never desync these keys from the plain
+            # int player_id the API looks them up by - see export.py.
+            pid = str(int(row.player_id))
             override = overrides.get(pid)
             if override == "skip":
                 result[pid] = None

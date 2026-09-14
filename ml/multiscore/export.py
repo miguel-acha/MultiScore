@@ -125,6 +125,14 @@ def export_bundle(fetch_photos: bool = True) -> None:
         browsable["away_team"] = browsable["away_team_meta"]
         browsable = browsable.drop(columns=["home_team_meta", "away_team_meta"])
 
+    # player_id round-trips through pandas as float64 (any NaN in the
+    # column upstream forces the whole column to float), which then
+    # serializes to string keys like "5503.0" - breaking every downstream
+    # dict lookup keyed by player_id (players.json, the API's /players/{id}
+    # route) since those all format the id as a plain int string. Force it
+    # back to a nullable int now, once, before it's used for anything.
+    browsable["player_id"] = browsable["player_id"].astype("Int64")
+
     browsable_match_ids = browsable["match_id"].unique().tolist()
     lineups = build_lineups(browsable_match_ids)
     nickname_map = lineups.set_index("player_id")["player_nickname"].to_dict()
