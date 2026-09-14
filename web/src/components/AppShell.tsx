@@ -1,7 +1,7 @@
 import { AnimatePresence } from "motion/react";
 import { Link, Outlet, useLocation } from "react-router";
 import { useEffect, useState } from "react";
-import NavBar from "./NavBar";
+import NavBar, { MobileNavBar } from "./NavBar";
 import PageTransition from "./PageTransition";
 import { loadProgress } from "../lib/progress";
 
@@ -35,6 +35,8 @@ export default function AppShell() {
           </PageTransition>
         </AnimatePresence>
       </div>
+
+      <MobileNavBar />
     </>
   );
 }
