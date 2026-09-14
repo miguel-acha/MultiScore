@@ -1,33 +1,67 @@
-// Explorer view: pick a competition -> match -> shot, see the freeze frame
-// on the pitch and compare xG-geo, xG-full and StatsBomb's own xG side by
-// side. Shots are sorted by |xg_diff| so the most interesting cases (where
-// defender context changes the read of the shot the most) show up first.
+// Explorer view: pick a competition -> season -> match -> shot, see the
+// freeze frame on the pitch and compare xG-geo, xG-full and StatsBomb's
+// own xG side by side. Shots are sorted by |xg_diff| so the most
+// interesting cases (where defender context changes the read of the shot
+// the most) show up first.
 import { useEffect, useMemo, useState } from "react";
 import { api } from "./api";
-import type { Competition, Match, Shot } from "./api";
+import type { Competition, Match, Shot, Player } from "./api";
 import Pitch from "./Pitch";
 import type { PitchPlayer } from "./Pitch";
+
+function initials(name: string): string {
+  return name
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((w) => w[0]?.toUpperCase())
+    .join("");
+}
+
+function PlayerAvatar({ player, size = 40 }: { player: Player | null; size?: number }) {
+  const style = { width: size, height: size, borderRadius: "50%" };
+  if (player?.photo) {
+    return <img src={player.photo.thumb_url} alt={player.name} className="player-avatar-img" style={style} />;
+  }
+  return (
+    <div className="player-avatar-fallback" style={style}>
+      {player ? initials(player.nickname || player.name) : "?"}
+    </div>
+  );
+}
 
 export default function Explorer() {
   const [competitions, setCompetitions] = useState<Competition[]>([]);
   const [competitionId, setCompetitionId] = useState<number | null>(null);
+  const [seasonId, setSeasonId] = useState<number | null>(null);
   const [matches, setMatches] = useState<Match[]>([]);
   const [matchId, setMatchId] = useState<number | null>(null);
   const [shots, setShots] = useState<Shot[]>([]);
   const [selectedShotId, setSelectedShotId] = useState<string | null>(null);
+  const [shotPlayer, setShotPlayer] = useState<Player | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     api.competitions().then((cs) => {
       setCompetitions(cs);
-      if (cs.length > 0) setCompetitionId(cs[0].competition_id);
+      if (cs.length > 0) {
+        setCompetitionId(cs[0].competition_id);
+        setSeasonId(cs[0].seasons[0]?.season_id ?? null);
+      }
     }).catch((e) => setError(String(e)));
   }, []);
+
+  const competition = competitions.find((c) => c.competition_id === competitionId) ?? null;
 
   useEffect(() => {
     if (competitionId == null) return;
     api.matches(competitionId).then(setMatches).catch((e) => setError(String(e)));
   }, [competitionId]);
+
+  const matchesInSeason = useMemo(
+    () => (seasonId == null ? matches : matches.filter((m) => m.season_id === seasonId)),
+    [matches, seasonId]
+  );
 
   useEffect(() => {
     if (matchId == null) return;
@@ -42,6 +76,13 @@ export default function Explorer() {
     () => shots.find((s) => s.event_id === selectedShotId) ?? null,
     [shots, selectedShotId]
   );
+
+  useEffect(() => {
+    setShotPlayer(null);
+    if (selectedShot?.player_id != null) {
+      api.player(selectedShot.player_id).then(setShotPlayer).catch(() => setShotPlayer(null));
+    }
+  }, [selectedShot?.player_id]);
 
   const pitchPlayers: PitchPlayer[] = useMemo(() => {
     if (!selectedShot?.freeze_frame) return [];
@@ -61,21 +102,40 @@ export default function Explorer() {
       <div className="controls">
         <label>
           Competición
-          <select value={competitionId ?? ""} onChange={(e) => setCompetitionId(Number(e.target.value))}>
+          <select
+            value={competitionId ?? ""}
+            onChange={(e) => {
+              const cid = Number(e.target.value);
+              setCompetitionId(cid);
+              const c = competitions.find((c) => c.competition_id === cid);
+              setSeasonId(c?.seasons[0]?.season_id ?? null);
+              setMatchId(null);
+            }}
+          >
             {competitions.map((c) => (
               <option key={c.competition_id} value={c.competition_id}>
-                {c.competition_label} ({c.seasons.join(", ")})
+                {c.name}
               </option>
             ))}
           </select>
         </label>
+        {competition && competition.seasons.length > 1 && (
+          <label>
+            Temporada
+            <select value={seasonId ?? ""} onChange={(e) => { setSeasonId(Number(e.target.value)); setMatchId(null); }}>
+              {competition.seasons.map((s) => (
+                <option key={s.season_id} value={s.season_id}>{s.label}</option>
+              ))}
+            </select>
+          </label>
+        )}
         <label>
           Partido
           <select value={matchId ?? ""} onChange={(e) => setMatchId(Number(e.target.value))}>
             <option value="">Selecciona un partido</option>
-            {matches.map((m) => (
+            {matchesInSeason.map((m) => (
               <option key={m.match_id} value={m.match_id}>
-                {m.match_date ?? m.match_id} · {m.n_shots} disparos, {m.n_goals} goles
+                {m.home_team} {m.home_score}-{m.away_score} {m.away_team} · {m.n_shots} disparos
               </option>
             ))}
           </select>
@@ -90,7 +150,8 @@ export default function Explorer() {
               className={`shot-item ${s.event_id === selectedShotId ? "selected" : ""} ${s.is_goal ? "goal" : ""}`}
               onClick={() => setSelectedShotId(s.event_id)}
             >
-              <strong>{s.player ?? "?"}</strong>
+              <strong>{s.player_nickname ?? s.player ?? "?"}</strong>
+              <span className="shot-item-meta">{s.minute}' · {s.team}</span>
               <span>xG geo {s.xg_geo.toFixed(2)} · xG full {s.xg_full.toFixed(2)}</span>
               <span className="diff">Δ {s.xg_diff >= 0 ? "+" : ""}{s.xg_diff.toFixed(2)}</span>
               {s.is_goal === 1 && <span className="badge">GOL</span>}
@@ -101,9 +162,20 @@ export default function Explorer() {
         <div className="shot-detail">
           {selectedShot ? (
             <>
+              <div className="shot-header">
+                <PlayerAvatar player={shotPlayer} />
+                <div>
+                  <strong>{selectedShot.player_nickname ?? selectedShot.player}</strong>
+                  {selectedShot.jersey_number != null && <span className="jersey"> #{selectedShot.jersey_number}</span>}
+                  <div className="shot-meta">
+                    {selectedShot.team} · minuto {selectedShot.minute}
+                  </div>
+                </div>
+              </div>
               <Pitch
                 shooter={{ x: selectedShot.loc_x, y: selectedShot.loc_y }}
                 players={pitchPlayers}
+                goalCoveragePct={selectedShot.goal_coverage_pct ?? undefined}
               />
               <div className="xg-panel">
                 <div className="xg-card">
@@ -122,6 +194,12 @@ export default function Explorer() {
               <p className="shot-meta">
                 {selectedShot.shot_body_part} · {selectedShot.shot_type} · resultado: {selectedShot.shot_outcome}
               </p>
+              {shotPlayer?.photo?.artist_html && (
+                <p
+                  className="photo-credit"
+                  dangerouslySetInnerHTML={{ __html: `Foto: ${shotPlayer.photo.artist_html} · ${shotPlayer.photo.license ?? ""}` }}
+                />
+              )}
             </>
           ) : (
             <p>Selecciona un partido y un disparo.</p>

@@ -1,0 +1,10 @@
+# Manual overrides for ml/multiscore/photos.py, keyed by StatsBomb player_id
+# (as a string).
+#
+#   "<player_id>": "<wikidata_qid>"   # force a specific Wikidata match
+#   "<player_id>": "skip"             # never look this player up; always
+#                                      # show the initials avatar
+#
+# Use this when the automatic Wikidata search picks the wrong person (same
+# name, different sport/era) or fails to find someone who does have a
+# Commons photo under a different spelling.

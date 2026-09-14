@@ -16,6 +16,7 @@ from app.schemas import (
     HealthOut,
     MatchOut,
     ModelInfoOut,
+    PlayerOut,
     PredictRequest,
     PredictResponse,
     ShotOut,
@@ -73,12 +74,28 @@ def matches(competition_id: int):
     return [_clean_nan(r) for r in rows]
 
 
+@app.get("/matches/{match_id}", response_model=MatchOut)
+def match_detail(match_id: int):
+    row = service.get_match(match_id)
+    if row is None:
+        raise HTTPException(status_code=404, detail="Match not found")
+    return _clean_nan(row)
+
+
 @app.get("/matches/{match_id}/shots", response_model=list[ShotOut])
 def shots(match_id: int):
     rows = service.get_shots(match_id)
     if not rows:
         raise HTTPException(status_code=404, detail="No shots found for this match")
     return [_clean_nan(r) for r in rows]
+
+
+@app.get("/players/{player_id}", response_model=PlayerOut)
+def player_detail(player_id: int):
+    row = service.get_player(player_id)
+    if row is None:
+        raise HTTPException(status_code=404, detail="Player not found")
+    return _clean_nan(row)
 
 
 @app.post("/predict", response_model=PredictResponse)

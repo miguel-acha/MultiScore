@@ -34,6 +34,12 @@ class MultiScoreService:
         self.shots = pd.read_parquet(DATA_DIR / "shots.parquet")
         self.matches = pd.read_parquet(DATA_DIR / "matches.parquet")
 
+        players_path = DATA_DIR / "players.json"
+        self.player_photos: dict = {}
+        if players_path.exists():
+            with open(players_path) as f:
+                self.player_photos = json.load(f)
+
     # ---- live inference (simulator) -------------------------------------
     def predict(self, request) -> dict[str, Any]:
         shooter = (request.shooter_x, request.shooter_y)
@@ -86,20 +92,56 @@ class MultiScoreService:
                 "defenders_in_triangle": defender_feats["defenders_in_triangle"],
                 "nearest_defender_dist_m": defender_feats["nearest_defender_dist_m"],
                 "goalkeeper_present": defender_feats["goalkeeper_present"],
+                "goal_coverage_pct": defender_feats["goal_coverage_pct"],
+                "open_goal_geometric": defender_feats["open_goal_geometric"],
             },
         }
 
     # ---- browsing precomputed data ---------------------------------------
     def list_competitions(self) -> list[dict]:
-        grouped = self.matches.groupby(["competition_id", "competition_label"])["season_id"].unique()
-        return [
-            {"competition_id": int(cid), "competition_label": label, "seasons": sorted(int(s) for s in seasons)}
-            for (cid, label), seasons in grouped.items()
-        ]
+        out = []
+        for (cid, label), group in self.matches.groupby(["competition_id", "competition_label"]):
+            seasons = (
+                group[["season_id", "season_label"]]
+                .drop_duplicates()
+                .sort_values("season_id")
+            )
+            name = "Mundial 2022" if label == "world_cup_2022" else "La Liga"
+            out.append(
+                {
+                    "competition_id": int(cid),
+                    "competition_label": label,
+                    "name": name,
+                    "seasons": [
+                        {"season_id": int(r.season_id), "label": r.season_label}
+                        for r in seasons.itertuples()
+                    ],
+                }
+            )
+        return out
 
     def list_matches(self, competition_id: int) -> list[dict]:
         rows = self.matches[self.matches["competition_id"] == competition_id]
-        return rows.to_dict(orient="records")
+        return rows.sort_values("match_date").to_dict(orient="records")
+
+    def get_match(self, match_id: int) -> dict | None:
+        rows = self.matches[self.matches["match_id"] == match_id]
+        if rows.empty:
+            return None
+        return rows.iloc[0].to_dict()
+
+    def get_player(self, player_id: int) -> dict | None:
+        rows = self.shots[self.shots["player_id"] == player_id]
+        if rows.empty:
+            return None
+        row = rows.iloc[0]
+        photo = self.player_photos.get(str(player_id))
+        return {
+            "player_id": int(player_id),
+            "name": row["player"],
+            "nickname": row.get("player_nickname"),
+            "photo": photo,
+        }
 
     def get_shots(self, match_id: int) -> list[dict]:
         rows = self.shots[self.shots["match_id"] == match_id]

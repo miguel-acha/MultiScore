@@ -17,10 +17,16 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
   return resp.json();
 }
 
+export interface Season {
+  season_id: number;
+  label: string;
+}
+
 export interface Competition {
   competition_id: number;
   competition_label: string;
-  seasons: number[];
+  name: string;
+  seasons: Season[];
 }
 
 export interface Match {
@@ -29,6 +35,15 @@ export interface Match {
   competition_id: number;
   season_id: number;
   competition_label: string;
+  season_label: string;
+  home_team: string;
+  away_team: string;
+  home_score: number;
+  away_score: number;
+  competition_stage: string | null;
+  stadium: string | null;
+  home_xg_full: number;
+  away_xg_full: number;
   n_shots: number;
   n_goals: number;
 }
@@ -43,7 +58,12 @@ export interface FreezeFramePlayer {
 export interface Shot {
   event_id: string;
   match_id: number;
+  minute: number | null;
+  period: number | null;
   player: string | null;
+  player_id: number | null;
+  player_nickname: string | null;
+  jersey_number: number | null;
   team: string | null;
   shot_outcome: string | null;
   is_goal: number;
@@ -51,11 +71,28 @@ export interface Shot {
   xg_geo: number;
   xg_full: number;
   xg_diff: number;
+  goal_coverage_pct: number | null;
   loc_x: number;
   loc_y: number;
+  shot_end_x: number | null;
+  shot_end_y: number | null;
+  shot_end_z: number | null;
   shot_body_part: string | null;
   shot_type: string | null;
   freeze_frame: FreezeFramePlayer[] | null;
+}
+
+export interface PlayerPhoto {
+  thumb_url: string;
+  license: string | null;
+  artist_html: string | null;
+}
+
+export interface Player {
+  player_id: number;
+  name: string;
+  nickname: string | null;
+  photo: PlayerPhoto | null;
 }
 
 export interface PredictRequestPlayer {
@@ -96,7 +133,9 @@ export const api = {
   health: () => request<{ status: string; model_version: string }>("/health"),
   competitions: () => request<Competition[]>("/competitions"),
   matches: (competitionId: number) => request<Match[]>(`/competitions/${competitionId}/matches`),
+  match: (matchId: number) => request<Match>(`/matches/${matchId}`),
   shots: (matchId: number) => request<Shot[]>(`/matches/${matchId}/shots`),
+  player: (playerId: number) => request<Player>(`/players/${playerId}`),
   predict: (payload: PredictRequest) =>
     request<PredictResponse>("/predict", { method: "POST", body: JSON.stringify(payload) }),
   modelInfo: () => request<ModelInfo>("/model"),

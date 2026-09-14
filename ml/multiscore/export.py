@@ -1,7 +1,7 @@
 """Precompute xG-geo, xG-full and the StatsBomb baseline xG for every shot
 that will be browsable in the web app's "explorer" view, and package
-everything the API needs (models + precomputed shots + competition/match
-metadata) into a compact bundle under api/app/data/.
+everything the API needs (models + precomputed shots + match/player
+metadata + player photos) into a compact bundle under api/app/data/.
 
 Precomputing means the explorer never calls the live model for historical
 shots - only the interactive simulator (POST /predict) runs inference live.
@@ -18,7 +18,10 @@ from pathlib import Path
 import joblib
 import pandas as pd
 
+from multiscore.geometry import goal_coverage_pct
+from multiscore.metadata import build_lineups, build_match_metadata
 from multiscore.modeling import prepare_frame
+from multiscore.photos import build_player_photos
 
 ROOT = Path(__file__).resolve().parents[2]
 MODELS_DIR = ROOT / "models"
@@ -27,7 +30,20 @@ API_DATA_DIR = ROOT / "api" / "app" / "data"
 API_MODELS_DIR = ROOT / "api" / "app" / "models"
 
 
-def export_bundle() -> None:
+def _shot_shadow_pct(row) -> float:
+    """goal_coverage_pct for a precomputed shot row (defenders + keeper
+    from its freeze frame), used by the web pitch to draw the same
+    "shadow on the goal" the model actually sees.
+    """
+    ff = row.get("freeze_frame")
+    if ff is None or len(ff) == 0:
+        return 0.0
+    shooter = (row["loc_x"], row["loc_y"])
+    obstacles = [tuple(e["location"]) for e in ff if not e.get("teammate")]
+    return goal_coverage_pct(shooter, obstacles)
+
+
+def export_bundle(fetch_photos: bool = True) -> None:
     API_DATA_DIR.mkdir(parents=True, exist_ok=True)
     API_MODELS_DIR.mkdir(parents=True, exist_ok=True)
 
@@ -88,25 +104,87 @@ def export_bundle() -> None:
     browsable["xg_geo"] = geo_model.predict_proba(Xg)[:, 1]
     browsable["xg_full"] = full_model.predict_proba(Xf)[:, 1]
     browsable["xg_diff"] = browsable["xg_full"] - browsable["xg_geo"]
+    browsable["goal_coverage_pct"] = browsable.apply(_shot_shadow_pct, axis=1)
+
+    # ---- match + player metadata (readable names, score, nickname/photo) --
+    match_meta = build_match_metadata()
+    browsable = browsable.merge(
+        match_meta[
+            ["match_id", "season_label", "home_team", "away_team", "home_score", "away_score", "competition_stage", "stadium"]
+        ],
+        on="match_id",
+        how="left",
+        suffixes=("", "_meta"),
+    )
+    # build_feature_table already carried a home_team/away_team from the raw
+    # event rows for La Liga/World Cup; prefer the metadata version (it's
+    # sourced from sb.matches, same as the score, so it's guaranteed
+    # consistent with home_score/away_score).
+    if "home_team_meta" in browsable.columns:
+        browsable["home_team"] = browsable["home_team_meta"]
+        browsable["away_team"] = browsable["away_team_meta"]
+        browsable = browsable.drop(columns=["home_team_meta", "away_team_meta"])
+
+    browsable_match_ids = browsable["match_id"].unique().tolist()
+    lineups = build_lineups(browsable_match_ids)
+    nickname_map = lineups.set_index("player_id")["player_nickname"].to_dict()
+    jersey_map = lineups.set_index("player_id")["jersey_number"].to_dict()
+    browsable["player_nickname"] = browsable["player_id"].map(nickname_map)
+    browsable["player_nickname"] = browsable["player_nickname"].fillna(browsable["player"])
+    browsable["jersey_number"] = browsable["player_id"].map(jersey_map)
+
+    if fetch_photos:
+        unique_players = (
+            browsable[["player_id", "player", "player_nickname"]]
+            .rename(columns={"player": "player_name"})
+            .drop_duplicates(subset=["player_id"])
+        )
+        build_player_photos(unique_players)
 
     export_cols = [
         "event_id", "match_id", "match_date", "competition_id", "season_id",
-        "competition_label", "player", "team", "shot_outcome", "is_goal",
-        "statsbomb_xg", "xg_geo", "xg_full", "xg_diff",
-        "loc_x", "loc_y", "shot_body_part", "shot_type", "freeze_frame",
+        "competition_label", "season_label", "home_team", "away_team",
+        "home_score", "away_score", "competition_stage", "stadium",
+        "minute", "period", "player", "player_id", "player_nickname",
+        "jersey_number", "team", "shot_outcome", "is_goal",
+        "statsbomb_xg", "xg_geo", "xg_full", "xg_diff", "goal_coverage_pct",
+        "loc_x", "loc_y", "shot_end_x", "shot_end_y", "shot_end_z",
+        "shot_body_part", "shot_type", "freeze_frame",
     ]
-    export_df = browsable[export_cols]
+    export_df = browsable[[c for c in export_cols if c in browsable.columns]]
     export_df.to_parquet(API_DATA_DIR / "shots.parquet")
     print(f"Exported {len(export_df)} precomputed shots -> {API_DATA_DIR / 'shots.parquet'}")
 
     matches = (
-        browsable.groupby(["match_id", "match_date", "competition_id", "season_id", "competition_label"])
+        browsable.groupby(
+            [
+                "match_id", "match_date", "competition_id", "season_id",
+                "competition_label", "season_label", "home_team", "away_team",
+                "home_score", "away_score", "competition_stage", "stadium",
+            ]
+        )
         .agg(n_shots=("event_id", "count"), n_goals=("is_goal", "sum"))
         .reset_index()
     )
+    # xg per team (full model): sum xg_full grouped by (match, team), then
+    # look up the home/away team's total for each match.
+    team_xg = (
+        browsable.groupby(["match_id", "team"])["xg_full"].sum().reset_index()
+    )
+    home_xg = matches.merge(
+        team_xg, left_on=["match_id", "home_team"], right_on=["match_id", "team"], how="left"
+    )["xg_full"].fillna(0.0)
+    away_xg = matches.merge(
+        team_xg, left_on=["match_id", "away_team"], right_on=["match_id", "team"], how="left"
+    )["xg_full"].fillna(0.0)
+    matches["home_xg_full"] = home_xg
+    matches["away_xg_full"] = away_xg
+
     matches.to_parquet(API_DATA_DIR / "matches.parquet")
     print(f"Exported {len(matches)} matches -> {API_DATA_DIR / 'matches.parquet'}")
 
 
 if __name__ == "__main__":
-    export_bundle()
+    import sys
+
+    export_bundle(fetch_photos="--no-photos" not in sys.argv)

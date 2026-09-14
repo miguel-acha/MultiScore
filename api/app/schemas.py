@@ -45,7 +45,12 @@ class PredictResponse(BaseModel):
 class ShotOut(BaseModel):
     event_id: str
     match_id: int
+    minute: int | None = None
+    period: int | None = None
     player: str | None
+    player_id: int | None = None
+    player_nickname: str | None = None
+    jersey_number: int | None = None
     team: str | None
     shot_outcome: str | None
     is_goal: int
@@ -53,8 +58,12 @@ class ShotOut(BaseModel):
     xg_geo: float
     xg_full: float
     xg_diff: float
+    goal_coverage_pct: float | None = None
     loc_x: float
     loc_y: float
+    shot_end_x: float | None = None
+    shot_end_y: float | None = None
+    shot_end_z: float | None = None
     shot_body_part: str | None
     shot_type: str | None
     freeze_frame: list | None
@@ -66,14 +75,42 @@ class MatchOut(BaseModel):
     competition_id: int
     season_id: int
     competition_label: str
+    season_label: str
+    home_team: str
+    away_team: str
+    home_score: int
+    away_score: int
+    competition_stage: str | None = None
+    stadium: str | None = None
+    home_xg_full: float
+    away_xg_full: float
     n_shots: int
     n_goals: int
+
+
+class SeasonOut(BaseModel):
+    season_id: int
+    label: str
 
 
 class CompetitionOut(BaseModel):
     competition_id: int
     competition_label: str
-    seasons: list[int]
+    name: str
+    seasons: list[SeasonOut]
+
+
+class PlayerPhotoOut(BaseModel):
+    thumb_url: str
+    license: str | None = None
+    artist_html: str | None = None
+
+
+class PlayerOut(BaseModel):
+    player_id: int
+    name: str
+    nickname: str | None = None
+    photo: PlayerPhotoOut | None = None
 
 
 class HealthOut(BaseModel):
