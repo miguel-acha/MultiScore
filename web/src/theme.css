@@ -1,0 +1,128 @@
+/* MultiScore design system — EA FC–style: near-black surfaces, lime-neon
+   accent, condensed display numbers, diagonally-cut "menu" shapes. Every
+   color used anywhere in the app should trace back to a token here. */
+@import "tailwindcss";
+@import "@fontsource-variable/inter";
+@import "@fontsource/barlow-condensed/700.css";
+@import "@fontsource/barlow-condensed/800.css";
+
+@theme {
+  --font-sans: "Inter Variable", system-ui, -apple-system, sans-serif;
+  --font-display: "Barlow Condensed", "Inter Variable", sans-serif;
+
+  --color-bg: #07090d;
+  --color-surface: #0f1319;
+  --color-surface-2: #161b23;
+  --color-surface-3: #1d2530;
+  --color-border: rgba(255, 255, 255, 0.08);
+  --color-border-strong: rgba(255, 255, 255, 0.16);
+
+  --color-lime: #c8ff00;
+  --color-lime-dim: #9bcc00;
+  --color-rival: #ff4d5e;
+  --color-gk: #ffd23f;
+  --color-shooter: #f5f7fa;
+  --color-teammate: #7c8798;
+
+  --color-text: #eef2f8;
+  --color-text-dim: #98a2b3;
+  --color-text-faint: #5b6577;
+
+  --shadow-glow-lime: 0 0 24px rgba(200, 255, 0, 0.35);
+  --shadow-glow-lime-lg: 0 0 48px rgba(200, 255, 0, 0.28);
+  --shadow-card: 0 8px 32px rgba(0, 0, 0, 0.45);
+}
+
+:root {
+  color-scheme: dark;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  background: var(--color-bg);
+  color: var(--color-text);
+  background-image:
+    radial-gradient(1200px 600px at 20% -10%, rgba(200, 255, 0, 0.05), transparent),
+    radial-gradient(900px 500px at 90% 0%, rgba(255, 255, 255, 0.03), transparent);
+  background-attachment: fixed;
+}
+
+::selection {
+  background: var(--color-lime);
+  color: #07090d;
+}
+
+/* Diagonal-cut "menu" shape reused for buttons, tabs and hero tiles. */
+.clip-menu {
+  clip-path: polygon(14px 0, 100% 0, 100% calc(100% - 14px), calc(100% - 14px) 100%, 0 100%, 0 14px);
+}
+
+.clip-menu-sm {
+  clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px);
+}
+
+.font-display {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-style: italic;
+  letter-spacing: -0.01em;
+}
+
+.text-stat {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-style: italic;
+}
+
+/* Standard interactive affordance: every clickable surface gets this. */
+.interactive {
+  transition: transform 180ms ease, border-color 180ms ease, box-shadow 180ms ease, background-color 180ms ease, color 180ms ease;
+}
+
+.interactive:hover {
+  transform: translateY(-2px);
+}
+
+.interactive:active {
+  transform: scale(0.97);
+}
+
+.interactive:focus-visible {
+  outline: 2px solid var(--color-lime);
+  outline-offset: 2px;
+}
+
+/* Subtle scanline/noise texture for the hub background. */
+.bg-noise {
+  background-image: radial-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px);
+  background-size: 3px 3px;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-surface-3);
+  border-radius: 8px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-border-strong);
+}

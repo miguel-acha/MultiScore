@@ -12,6 +12,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.schemas import (
+    ChallengeShotOut,
     CompetitionOut,
     HealthOut,
     MatchOut,
@@ -96,6 +97,16 @@ def player_detail(player_id: int):
     if row is None:
         raise HTTPException(status_code=404, detail="Player not found")
     return _clean_nan(row)
+
+
+@app.get("/challenge/shots", response_model=list[ChallengeShotOut])
+def challenge_shots(n: int = 10, balanced: bool = True, seed: int | None = None):
+    if not 1 <= n <= 30:
+        raise HTTPException(status_code=422, detail="n must be between 1 and 30")
+    rows = service.random_shots(n=n, balanced=balanced, seed=seed)
+    if not rows:
+        raise HTTPException(status_code=404, detail="No shots with freeze frame available")
+    return [_clean_nan(r) for r in rows]
 
 
 @app.post("/predict", response_model=PredictResponse)

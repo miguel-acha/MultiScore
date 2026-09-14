@@ -69,6 +69,11 @@ class ShotOut(BaseModel):
     freeze_frame: list | None
 
 
+class ChallengeShotOut(ShotOut):
+    home_team: str | None = None
+    away_team: str | None = None
+
+
 class MatchOut(BaseModel):
     match_id: int
     match_date: str | None

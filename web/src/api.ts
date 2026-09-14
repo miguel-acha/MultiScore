@@ -129,6 +129,11 @@ export interface ModelInfo {
   metrics: Record<string, any>;
 }
 
+export interface ChallengeShot extends Shot {
+  home_team: string | null;
+  away_team: string | null;
+}
+
 export const api = {
   health: () => request<{ status: string; model_version: string }>("/health"),
   competitions: () => request<Competition[]>("/competitions"),
@@ -139,4 +144,6 @@ export const api = {
   predict: (payload: PredictRequest) =>
     request<PredictResponse>("/predict", { method: "POST", body: JSON.stringify(payload) }),
   modelInfo: () => request<ModelInfo>("/model"),
+  challengeShots: (n = 10, balanced = true) =>
+    request<ChallengeShot[]>(`/challenge/shots?n=${n}&balanced=${balanced}`),
 };

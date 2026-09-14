@@ -164,3 +164,26 @@ def test_model_endpoint_reports_selected_models(client):
     body = resp.json()
     assert body["geo_model"]
     assert body["full_model"]
+
+
+def test_challenge_shots_returns_n_shots_with_freeze_frame(client):
+    resp = client.get("/challenge/shots?n=10")
+    assert resp.status_code == 200
+    shots = resp.json()
+    assert len(shots) == 10
+    for shot in shots:
+        assert shot["freeze_frame"]
+        assert shot["home_team"] and shot["away_team"]
+
+
+def test_challenge_shots_balanced_has_goals_and_misses(client):
+    resp = client.get("/challenge/shots?n=10&balanced=true")
+    shots = resp.json()
+    goals = sum(1 for s in shots if s["is_goal"] == 1)
+    assert goals >= 3
+    assert goals <= 7
+
+
+def test_challenge_shots_rejects_out_of_range_n(client):
+    resp = client.get("/challenge/shots?n=999")
+    assert resp.status_code == 422

@@ -145,6 +145,10 @@ class MultiScoreService:
 
     def get_shots(self, match_id: int) -> list[dict]:
         rows = self.shots[self.shots["match_id"] == match_id]
+        return self._serialize_shot_rows(rows)
+
+    @staticmethod
+    def _serialize_shot_rows(rows: pd.DataFrame) -> list[dict]:
         records = rows.to_dict(orient="records")
         # freeze_frame round-trips through parquet as a numpy array of dicts;
         # Pydantic/FastAPI can't serialize numpy.ndarray, so convert to a
@@ -156,6 +160,49 @@ class MultiScoreService:
                     {**entry, "location": list(entry["location"])} for entry in ff
                 ]
         return records
+
+    # ---- game mode: random shot rounds -----------------------------------
+    def random_shots(self, n: int = 10, balanced: bool = True, seed: int | None = None) -> list[dict]:
+        """Pick `n` real shots that have a freeze frame, for the "guess the
+        xG" / "goal or not" game modes. `balanced=True` samples roughly half
+        goals and half non-goals so "goal or not" stays a real guessing game
+        instead of "always say no". `seed` makes a round reproducible (for a
+        future daily-challenge / shareable link use case).
+        """
+        rng_seed = seed if seed is not None else None
+        pool = self.shots[self.shots["freeze_frame"].notna()]
+        if pool.empty:
+            return []
+
+        if balanced:
+            goals = pool[pool["is_goal"] == 1]
+            misses = pool[pool["is_goal"] == 0]
+            n_goals = min(n // 2, len(goals))
+            n_misses = min(n - n_goals, len(misses))
+            # top up from whichever pool has more left, if one side is short
+            remaining = n - n_goals - n_misses
+            if remaining > 0 and len(goals) > n_goals:
+                extra = min(remaining, len(goals) - n_goals)
+                n_goals += extra
+                remaining -= extra
+            if remaining > 0 and len(misses) > n_misses:
+                n_misses += min(remaining, len(misses) - n_misses)
+            picked = pd.concat(
+                [
+                    goals.sample(n=n_goals, random_state=rng_seed) if n_goals else goals.iloc[0:0],
+                    misses.sample(n=n_misses, random_state=rng_seed) if n_misses else misses.iloc[0:0],
+                ]
+            ).sample(frac=1, random_state=rng_seed)
+        else:
+            picked = pool.sample(n=min(n, len(pool)), random_state=rng_seed)
+
+        rows = self._serialize_shot_rows(picked)
+        match_lookup = self.matches.set_index("match_id")[["home_team", "away_team"]].to_dict(orient="index")
+        for row in rows:
+            teams = match_lookup.get(row["match_id"])
+            row["home_team"] = teams["home_team"] if teams else None
+            row["away_team"] = teams["away_team"] if teams else None
+        return rows
 
     def model_info(self) -> dict:
         return self.model_card
