@@ -39,9 +39,15 @@ export default function OutcomeMarker({
         <image href="/images/ball.png" x={1} y={1} width={18} height={18} preserveAspectRatio="xMidYMid meet" />
       )}
       {style.shape === "emoji" && (
-        <text x={10} y={11} textAnchor="middle" dominantBaseline="central" fontSize={15}>
-          {style.emoji}
-        </text>
+        <>
+          {/* A solid backing disc in the outcome's color, not just the bare
+              emoji - a tiny glyph on its own got lost against the green
+              pitch / dark surfaces, especially clustered next to others. */}
+          <circle cx={10} cy={10} r={9.5} fill={style.color} stroke="#07090d" strokeWidth={1.1} />
+          <text x={10} y={10.5} textAnchor="middle" dominantBaseline="central" fontSize={14}>
+            {style.emoji}
+          </text>
+        </>
       )}
     </svg>
   );

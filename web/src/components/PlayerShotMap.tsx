@@ -86,7 +86,7 @@ export default function PlayerShotMap({ shots }: { shots: Shot[] }) {
         // bigger - hundreds of shots plotted together were reading as an
         // undifferentiated speckle; a big, classic ball for the high-value
         // moments (goals) is what should pop out of that noise.
-        const size = (style.shape === "ball" ? 13 : 5) + Math.min(1, s.xg_full) * (style.shape === "ball" ? 15 : 4);
+        const size = (style.shape === "ball" ? 13 : 13) + Math.min(1, s.xg_full) * (style.shape === "ball" ? 15 : 8);
         return (
           <motion.g
             key={s.event_id}

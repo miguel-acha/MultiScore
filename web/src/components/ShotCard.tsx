@@ -51,7 +51,7 @@ export default function ShotCard({
         <span className="text-xs text-(--color-text-dim)">xG MultiScore {shot.xg_full.toFixed(2)}</span>
       </div>
       <span className="flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold text-(--color-text-dim)">
-        <OutcomeMarker style={style} size={style.shape === "ball" ? 14 : 10} />
+        <OutcomeMarker style={style} size={style.shape === "ball" ? 14 : 13} />
         {style.label}
       </span>
     </motion.div>

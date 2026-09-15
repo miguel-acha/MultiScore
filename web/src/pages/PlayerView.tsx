@@ -74,7 +74,7 @@ export default function PlayerView() {
           <div className="flex flex-wrap justify-center gap-x-4 gap-y-1 text-[11px] text-(--color-text-faint)">
             {OUTCOME_LEGEND.map((s) => (
               <span key={s.kind} className="flex items-center gap-1.5">
-                <OutcomeMarker style={s} size={s.shape === "ball" ? 14 : 9} />
+                <OutcomeMarker style={s} size={s.shape === "ball" ? 14 : 13} />
                 {s.label}
               </span>
             ))}
@@ -106,7 +106,7 @@ export default function PlayerView() {
                 >
                   <span>{s.team} · {s.minute}&apos;</span>
                   <span className="flex items-center gap-1" style={{ color: style.color }}>
-                    <OutcomeMarker style={style} size={style.shape === "ball" ? 14 : 10} />
+                    <OutcomeMarker style={style} size={style.shape === "ball" ? 14 : 13} />
                     {style.label}
                   </span>
                   <span className="text-(--color-text-dim)">xG {s.xg_full.toFixed(2)}</span>
