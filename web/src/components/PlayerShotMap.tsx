@@ -29,14 +29,43 @@ export default function PlayerShotMap({ shots }: { shots: Shot[] }) {
   const arcHalfChord = Math.sqrt(Math.max(0, arcRadiusPx ** 2 - (penSpotY - arcEdgeY) ** 2));
 
   const hovered = shots.find((s) => s.event_id === hoverId);
+  const hoveredStyle = hovered ? outcomeStyle(hovered.shot_outcome, hovered.is_goal === 1) : null;
 
   return (
-    <svg
-      viewBox={`0 0 ${VIEW_W} ${viewH}`}
-      width="100%"
-      className="block rounded-2xl border border-(--color-border)"
-      style={{ maxWidth: 640, background: "#134f2e" }}
-    >
+    <div style={{ maxWidth: 640 }}>
+      {/* Fixed-height info strip above the pitch, not a floating tooltip
+          anchored to the hovered point - that used to sit right on top of
+          (and hide) the very ball marker you're hovering, especially now
+          that goal markers are big. Same pattern as MatchTimeline's strip. */}
+      <div className="mb-2 flex h-11 items-center border border-(--color-border) bg-(--color-surface-2) px-3 clip-menu-sm">
+        <AnimatePresence mode="wait">
+          {hovered && hoveredStyle ? (
+            <motion.div
+              key={hovered.event_id}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.12 }}
+              className="flex w-full items-center gap-2 text-xs"
+            >
+              <OutcomeMarker style={hoveredStyle} size={16} />
+              <Link to={`/partido/${hovered.match_id}?tiro=${hovered.event_id}`} className="font-medium hover:text-(--color-lime)">
+                {hoveredStyle.label} · xG {hovered.xg_full.toFixed(2)}
+              </Link>
+              <span className="text-(--color-text-faint)">{hovered.minute}&apos; · {hovered.team} · ver partido</span>
+            </motion.div>
+          ) : (
+            <p className="text-xs text-(--color-text-faint)">Pasá el mouse sobre un disparo para ver el detalle.</p>
+          )}
+        </AnimatePresence>
+      </div>
+
+      <svg
+        viewBox={`0 0 ${VIEW_W} ${viewH}`}
+        width="100%"
+        className="block rounded-2xl border border-(--color-border)"
+        style={{ background: "#134f2e" }}
+      >
       <g stroke="rgba(255,255,255,0.5)" strokeWidth={lineW} fill="none">
         <rect x={PAD} y={PAD} width={VIEW_W - 2 * PAD} height={viewH - 2 * PAD} rx={10} />
         <rect {...box18} />
@@ -69,25 +98,7 @@ export default function PlayerShotMap({ shots }: { shots: Shot[] }) {
         );
       })}
 
-      <AnimatePresence>
-        {hovered && (
-          <motion.g initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-            <foreignObject
-              x={Math.min(VIEW_W - 190, Math.max(10, toSvg(hovered.loc_x, hovered.loc_y, camera)[0] - 90))}
-              y={Math.max(10, toSvg(hovered.loc_x, hovered.loc_y, camera)[1] - 54)}
-              width={180}
-              height={46}
-            >
-              <div className="clip-menu-sm border border-(--color-border-strong) bg-(--color-surface-2) px-2.5 py-1.5 text-xs text-(--color-text)">
-                <Link to={`/partido/${hovered.match_id}?tiro=${hovered.event_id}`} className="font-medium hover:text-(--color-lime)">
-                  {outcomeStyle(hovered.shot_outcome, hovered.is_goal === 1).label} · xG {hovered.xg_full.toFixed(2)}
-                </Link>
-                <p className="text-(--color-text-faint)">{hovered.minute}&apos; · {hovered.team} · ver partido</p>
-              </div>
-            </foreignObject>
-          </motion.g>
-        )}
-      </AnimatePresence>
     </svg>
+    </div>
   );
 }
