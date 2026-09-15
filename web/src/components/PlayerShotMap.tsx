@@ -32,7 +32,11 @@ export default function PlayerShotMap({ shots }: { shots: Shot[] }) {
   const hoveredStyle = hovered ? outcomeStyle(hovered.shot_outcome, hovered.is_goal === 1) : null;
 
   return (
-    <div style={{ maxWidth: 640 }}>
+    // Fills its grid column instead of capping at a fixed 640px - on
+    // PlayerView's wide `1fr` column that cap left the pitch looking
+    // tiny with a huge dead gap next to it, unlike every other full-width
+    // panel on the page.
+    <div className="w-full">
       {/* Fixed-height info strip above the pitch, not a floating tooltip
           anchored to the hovered point - that used to sit right on top of
           (and hide) the very ball marker you're hovering, especially now
