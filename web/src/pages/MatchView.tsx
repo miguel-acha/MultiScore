@@ -47,8 +47,13 @@ export default function MatchView() {
   const selectedShot = useMemo(() => shots.find((s) => s.event_id === selectedShotId) ?? null, [shots, selectedShotId]);
 
   function selectShot(eventId: string) {
+    // No scrollIntoView here on purpose: it used to also drag the outer
+    // page scroll position along whenever the target list item wasn't
+    // fully within the viewport, not just the shot list's own scroll
+    // container - jarring while stepping through shots with the
+    // timeline's arrows. The selected item still gets a visible highlight
+    // (ShotCard's `selected` styling) without moving the screen.
     setSelectedShotId(eventId);
-    document.querySelector(`[data-event-id="${eventId}"]`)?.scrollIntoView({ block: "nearest", behavior: "smooth" });
   }
 
   const pitchPlayers: PitchPlayer[] = useMemo(() => {
