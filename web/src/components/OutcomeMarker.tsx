@@ -38,9 +38,11 @@ export default function OutcomeMarker({
         // the other outcome dots at a glance.
         <image href="/images/ball.png" x={1} y={1} width={18} height={18} preserveAspectRatio="xMidYMid meet" />
       )}
-      {style.shape === "square" && <rect x={3} y={3} width={14} height={14} rx={3} fill={style.color} stroke="#07090d" strokeWidth={1} />}
-      {style.shape === "ring" && <circle cx={10} cy={10} r={7.5} fill="none" stroke={style.color} strokeWidth={2} />}
-      {style.shape === "circle" && <circle cx={10} cy={10} r={7} fill={style.color} stroke="#07090d" strokeWidth={1.5} />}
+      {style.shape === "emoji" && (
+        <text x={10} y={11} textAnchor="middle" dominantBaseline="central" fontSize={15}>
+          {style.emoji}
+        </text>
+      )}
     </svg>
   );
 }

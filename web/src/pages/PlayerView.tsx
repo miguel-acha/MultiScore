@@ -90,7 +90,7 @@ export default function PlayerView() {
                   .filter(([k]) => outcomeStyle(k).kind === s.kind)
                   .reduce((a, [, v]) => a + v, 0);
                 if (count === 0) return null;
-                return <div key={s.kind} style={{ width: `${(count / totalShots) * 100}%`, background: s.shape === "ring" ? "#ffffff" : s.color }} />;
+                return <div key={s.kind} style={{ width: `${(count / totalShots) * 100}%`, background: s.kind === "off_target" || s.kind === "post" ? "#ffffff" : s.color }} />;
               })}
             </div>
           </div>

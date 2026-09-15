@@ -10,14 +10,15 @@ export interface OutcomeStyle {
   kind: OutcomeKind;
   label: string;
   color: string;
-  shape: "ball" | "circle" | "square" | "ring";
+  shape: "ball" | "emoji";
+  emoji?: string;
 }
 
 const GOAL: OutcomeStyle = { kind: "goal", label: "Gol", color: "var(--color-lime)", shape: "ball" };
-const SAVED: OutcomeStyle = { kind: "saved", label: "Atajado", color: "var(--color-gk)", shape: "circle" };
-const BLOCKED: OutcomeStyle = { kind: "blocked", label: "Bloqueado", color: "var(--color-rival)", shape: "square" };
-const OFF_TARGET: OutcomeStyle = { kind: "off_target", label: "Afuera", color: "var(--color-text-faint)", shape: "ring" };
-const POST: OutcomeStyle = { kind: "post", label: "Palo", color: "#ffffff", shape: "ring" };
+const SAVED: OutcomeStyle = { kind: "saved", label: "Atajado", color: "var(--color-gk)", shape: "emoji", emoji: "🧤" };
+const BLOCKED: OutcomeStyle = { kind: "blocked", label: "Bloqueado", color: "var(--color-rival)", shape: "emoji", emoji: "🧱" };
+const OFF_TARGET: OutcomeStyle = { kind: "off_target", label: "Afuera", color: "var(--color-text-faint)", shape: "emoji", emoji: "❌" };
+const POST: OutcomeStyle = { kind: "post", label: "Palo", color: "#ffffff", shape: "emoji", emoji: "🪵" };
 
 const OUTCOME_MAP: Record<string, OutcomeStyle> = {
   Goal: GOAL,
