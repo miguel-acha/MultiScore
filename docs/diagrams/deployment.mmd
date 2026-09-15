@@ -1,25 +1,23 @@
-%% Diagrama de despliegue
-flowchart TB
-    subgraph GitHub
-        REPO[Repositorio MultiScore]
-        CI[GitHub Actions CI\nruff + pytest + npm build]
+%% Figura 5. Cadena de construcción y despliegue
+flowchart LR
+    subgraph GitHub["GitHub"]
+        REPO["Repositorio MultiScore"]
+        CI["GitHub Actions<br/>ruff · pytest · build web"]
         REPO --> CI
     end
 
-    subgraph Vercel
-        BUILD_WEB[Build: npm run build]
-        CDN[CDN estático]
+    subgraph VercelBlock["Vercel"]
+        BUILD_WEB["Build del frontend"]
+        CDN["Sitio estático publicado<br/>en red de distribución"]
         BUILD_WEB --> CDN
     end
 
     subgraph GCP["Google Cloud Platform"]
-        AR[Artifact Registry\nimagen Docker]
-        RUN["Cloud Run\nmin-instances=0, 512Mi"]
-        AR --> RUN
+        CB["Cloud Build<br/>construye la imagen"]
+        AR["Artifact Registry<br/>imagen Docker versionada"]
+        RUN["Cloud Run<br/>us-central1 · 512 MB<br/>mínimo 0 instancias"]
+        CB --> AR --> RUN
     end
 
-    REPO -- "push a main" --> Vercel
-    REPO -- "gcloud run deploy --source" --> AR
-
-    NAVEGADOR[Navegador del usuario] --> CDN
-    NAVEGADOR -- "VITE_API_URL" --> RUN
+    REPO -- "push a main" --> BUILD_WEB
+    REPO -- "despliegue del backend" --> CB

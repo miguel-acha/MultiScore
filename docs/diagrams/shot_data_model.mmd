@@ -1,7 +1,9 @@
-%% Modelo de datos: disparo y freeze frame
+%% Figura 3. Modelo de datos del disparo y la freeze frame
 erDiagram
+    direction LR
+
     MATCH ||--o{ SHOT : contiene
-    SHOT ||--o{ FREEZE_FRAME_PLAYER : "posiciones en el instante del remate"
+    SHOT ||--o{ FREEZE_FRAME_PLAYER : "posiciones en el remate"
 
     MATCH {
         int match_id PK
@@ -29,6 +31,7 @@ erDiagram
     }
 
     FREEZE_FRAME_PLAYER {
+        string event_id FK
         float location_x
         float location_y
         bool teammate

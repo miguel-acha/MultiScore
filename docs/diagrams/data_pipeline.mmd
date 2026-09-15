@@ -1,18 +1,19 @@
-%% Pipeline de datos y entrenamiento
+%% Figura 2. Pipeline de datos y entrenamiento
 flowchart TD
-    A[statsbombpy: descarga\nLa Liga 17 temporadas + Mundial 2022] --> B[data.py\ncache en data/raw/*.parquet]
-    B --> C["dataset.py: limpieza\n(quitar penales, duplicados,\nubicaciones inválidas)"]
-    C --> D["features.py: variables\ngeométricas + defensores\n(freeze frame)"]
-    D --> E["split_la_liga: 70/15/15\nagrupado por match_id"]
-    E --> F1[Train]
-    E --> F2[Validation]
-    E --> F3[Test]
-    D --> F4["Mundial 2022\n(prueba externa, nunca se toca\nen selección de modelo)"]
+    A["Descarga statsbombpy<br/>La Liga + Mundial 2022"] --> B["Caché local<br/>archivos Parquet"]
+    B --> C["Limpieza<br/>quita penales, duplicados<br/>y ubicaciones inválidas"]
+    C --> D["Construcción de variables<br/>9 geométricas + 13 de defensores"]
 
-    F1 --> G["train.py: 6 variantes\nLR / XGBoost / LightGBM\nx geo / full"]
+    D --> E["División agrupada por partido<br/>La Liga"]
+    D --> F4["Mundial 2022<br/>prueba externa · 1.430 disparos"]
+
+    E --> F1["Entrenamiento<br/>14.613"]
+    E --> F2["Validación<br/>3.150"]
+    E --> F3["Prueba interna<br/>3.173"]
+
+    F1 --> G["Entrenamiento de 6 variantes<br/>LR · XGBoost · LightGBM<br/>× geo / full"]
     F2 --> G
-    G --> H["evaluate.py: métricas,\nbootstrap, calibración,\ngeneralización"]
+    G --> H["Evaluación<br/>métricas, calibración<br/>y generalización"]
     F3 --> H
     F4 --> H
-    H --> I["export.py: precalcula xG\npara disparos navegables"]
-    I --> J[api/app/models + api/app/data]
+    H --> I["Exportación de artefactos<br/>modelos + datos precalculados"]
