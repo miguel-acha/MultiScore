@@ -3,7 +3,7 @@
 // by xG. Deliberately a separate, simpler component from HalfPitch (which
 // is built for dragging live player pucks around) rather than overloading
 // it with a second, static "plot N historical points" mode.
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Link } from "react-router";
 import { motion, AnimatePresence } from "motion/react";
 import { CAMERA_ATTACKING, GOAL_Y_LEFT, GOAL_Y_RIGHT, PAD, PITCH_X_MAX, VIEW_W, box, pxPerYard, toSvg, viewHeight } from "../lib/pitch";
@@ -13,6 +13,7 @@ import type { Shot } from "../api";
 
 export default function PlayerShotMap({ shots }: { shots: Shot[] }) {
   const [hoverId, setHoverId] = useState<string | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
   const camera = CAMERA_ATTACKING;
   const scale = pxPerYard(camera);
   const viewH = viewHeight(camera);
@@ -29,7 +30,22 @@ export default function PlayerShotMap({ shots }: { shots: Shot[] }) {
   const arcHalfChord = Math.sqrt(Math.max(0, arcRadiusPx ** 2 - (penSpotY - arcEdgeY) ** 2));
 
   const hovered = shots.find((s) => s.event_id === hoverId);
-  const hoveredStyle = hovered ? outcomeStyle(hovered.shot_outcome, hovered.is_goal === 1) : null;
+  const selected = shots.find((s) => s.event_id === selectedId);
+  // Hover wins while it's active, otherwise fall back to whatever's
+  // clicked - same rule the match timeline's info strip follows.
+  const displayed = hovered ?? selected ?? null;
+  const displayedStyle = displayed ? outcomeStyle(displayed.shot_outcome, displayed.is_goal === 1) : null;
+
+  // Goals paint last (SVG stacking = draw order, not z-index) so a goal
+  // marker is never partly hidden behind a neighboring shot, and the
+  // selected shot's ring paints on top of that so it's never hidden either.
+  const orderedShots = useMemo(() => {
+    const rank = (s: Shot) => {
+      const isGoal = outcomeStyle(s.shot_outcome, s.is_goal === 1).shape === "ball";
+      return (isGoal ? 2 : 0) + (s.event_id === selectedId ? 1 : 0);
+    };
+    return [...shots].sort((a, b) => rank(a) - rank(b));
+  }, [shots, selectedId]);
 
   return (
     // Fills its grid column instead of capping at a fixed 640px - on
@@ -43,23 +59,23 @@ export default function PlayerShotMap({ shots }: { shots: Shot[] }) {
           that goal markers are big. Same pattern as MatchTimeline's strip. */}
       <div className="mb-2 flex h-11 items-center border border-(--color-border) bg-(--color-surface-2) px-3 clip-menu-sm">
         <AnimatePresence mode="wait">
-          {hovered && hoveredStyle ? (
+          {displayed && displayedStyle ? (
             <motion.div
-              key={hovered.event_id}
+              key={displayed.event_id}
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.12 }}
               className="flex w-full items-center gap-2 text-xs"
             >
-              <OutcomeMarker style={hoveredStyle} size={16} />
-              <Link to={`/partido/${hovered.match_id}?tiro=${hovered.event_id}`} className="font-medium hover:text-(--color-lime)">
-                {hoveredStyle.label} · xG {hovered.xg_full.toFixed(2)}
+              <OutcomeMarker style={displayedStyle} size={16} />
+              <Link to={`/partido/${displayed.match_id}?tiro=${displayed.event_id}`} className="font-medium hover:text-(--color-lime)">
+                {displayedStyle.label} · xG {displayed.xg_full.toFixed(2)}
               </Link>
-              <span className="text-(--color-text-faint)">{hovered.minute}&apos; · {hovered.team} · ver partido</span>
+              <span className="text-(--color-text-faint)">{displayed.minute}&apos; · {displayed.team} · ver partido</span>
             </motion.div>
           ) : (
-            <p className="text-xs text-(--color-text-faint)">Pasá el mouse sobre un disparo para ver el detalle.</p>
+            <p className="text-xs text-(--color-text-faint)">Pasá el mouse o hacé clic en un disparo para ver el detalle.</p>
           )}
         </AnimatePresence>
       </div>
@@ -79,14 +95,17 @@ export default function PlayerShotMap({ shots }: { shots: Shot[] }) {
       <line x1={leftPostX} y1={goalY} x2={rightPostX} y2={goalY} stroke="#ffffff" strokeWidth={lineW * 2.2} strokeLinecap="round" />
       <circle cx={penSpotX} cy={penSpotY} r={Math.max(2, scale * 0.12)} fill="rgba(255,255,255,0.75)" />
 
-      {shots.map((s, i) => {
+      {orderedShots.map((s, i) => {
         const [sx, sy] = toSvg(s.loc_x, s.loc_y, camera);
         const style = outcomeStyle(s.shot_outcome, s.is_goal === 1);
         // Goals scale a lot more with xG than other outcomes, and start
         // bigger - hundreds of shots plotted together were reading as an
         // undifferentiated speckle; a big, classic ball for the high-value
-        // moments (goals) is what should pop out of that noise.
+        // moments (goals) is what should pop out of that noise. Unlike the
+        // match timeline, size still carries xG here - this view is
+        // specifically about comparing chance quality across shots.
         const size = (style.shape === "ball" ? 13 : 13) + Math.min(1, s.xg_full) * (style.shape === "ball" ? 15 : 8);
+        const isSelected = s.event_id === selectedId;
         return (
           <motion.g
             key={s.event_id}
@@ -94,9 +113,24 @@ export default function PlayerShotMap({ shots }: { shots: Shot[] }) {
             animate={{ scale: 1 }}
             transition={{ delay: Math.min(i * 0.008, 0.6), type: "spring", stiffness: 300, damping: 20 }}
             style={{ cursor: "pointer", transformOrigin: `${sx}px ${sy}px` }}
+            onClick={() => setSelectedId(s.event_id)}
             onMouseEnter={() => setHoverId(s.event_id)}
             onMouseLeave={() => setHoverId((h) => (h === s.event_id ? null : h))}
           >
+            {isSelected && (
+              <motion.circle
+                cx={sx}
+                cy={sy}
+                r={size / 2 + 4}
+                fill="none"
+                stroke="var(--color-lime)"
+                strokeWidth={2}
+                initial={{ scale: 1.4, opacity: 0.9 }}
+                animate={{ scale: 1, opacity: 1 }}
+                transition={{ duration: 0.25, ease: "easeOut" }}
+                style={{ transformOrigin: `${sx}px ${sy}px` }}
+              />
+            )}
             <OutcomeMarker style={style} size={size} x={sx} y={sy} />
           </motion.g>
         );

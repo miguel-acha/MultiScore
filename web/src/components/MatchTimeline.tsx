@@ -126,61 +126,69 @@ export default function MatchTimeline({ match, shots, selectedShotId, onSelect }
         </AnimatePresence>
       </div>
 
-      <div className="relative h-20">
-        <div className="absolute left-0 right-0 top-1/2 h-px -translate-y-1/2 bg-(--color-border-strong)" />
-        {minuteMarks.map((m) => (
-          <div key={m} className="absolute top-1/2 flex -translate-y-1/2 flex-col items-center" style={{ left: `${(m / maxMinute) * 100}%` }}>
-            <div className="h-2.5 w-px bg-(--color-border-strong)" />
-            <span className="mt-6 text-[10px] text-(--color-text-faint)">{m}&apos;</span>
-          </div>
-        ))}
+      {/* Horizontally scrollable, and wider than the visible strip once
+          there are more than a handful of shots - packed minutes used to
+          leave markers touching each other; spreading the track out over
+          more pixels gives each one room to be read. */}
+      <div className="overflow-x-auto pb-1">
+        <div className="relative h-20" style={{ minWidth: Math.max(640, sorted.length * 34) }}>
+          <div className="absolute left-0 right-0 top-1/2 h-px -translate-y-1/2 bg-(--color-border-strong)" />
+          {minuteMarks.map((m) => (
+            <div key={m} className="absolute top-1/2 flex -translate-y-1/2 flex-col items-center" style={{ left: `${(m / maxMinute) * 100}%` }}>
+              <div className="h-2.5 w-px bg-(--color-border-strong)" />
+              <span className="mt-6 text-[10px] text-(--color-text-faint)">{m}&apos;</span>
+            </div>
+          ))}
 
-        {selectedIndex !== -1 && (
-          <div
-            className="pointer-events-none absolute top-1/2 h-px -translate-y-1/2 bg-(--color-lime)"
-            style={{ left: 0, width: `${Math.min(100, ((sorted[selectedIndex].minute ?? 0) / maxMinute) * 100)}%`, opacity: 0.25 }}
-          />
-        )}
+          {selectedIndex !== -1 && (
+            <div
+              className="pointer-events-none absolute top-1/2 h-px -translate-y-1/2 bg-(--color-lime)"
+              style={{ left: 0, width: `${Math.min(100, ((sorted[selectedIndex].minute ?? 0) / maxMinute) * 100)}%`, opacity: 0.25 }}
+            />
+          )}
 
-        {sorted.map((s) => {
-          const isHome = s.team === match.home_team;
-          const style = outcomeStyle(s.shot_outcome, s.is_goal === 1);
-          const isSelected = s.event_id === selectedShotId;
-          // Goals scale a lot more dramatically with xG than other outcomes -
-          // a near-certain tap-in goal should read as a big, unmissable
-          // ball, not the same size as a 0.02 xG speculative effort.
-          const size = style.shape === "ball" ? 18 + Math.min(1, s.xg_full) * 14 : 19 + Math.min(1, s.xg_full) * 9;
-          const leftPct = Math.min(100, ((s.minute ?? 0) / maxMinute) * 100);
-          return (
-            <button
-              key={s.event_id}
-              onClick={() => onSelect(s.event_id)}
-              onMouseEnter={() => setHoverId(s.event_id)}
-              onMouseLeave={() => setHoverId((h) => (h === s.event_id ? null : h))}
-              className="interactive absolute flex items-center justify-center rounded-full"
-              style={{
-                left: `${leftPct}%`,
-                top: isHome ? "calc(50% - 20px)" : "calc(50% + 8px)",
-                width: 28,
-                height: 28,
-                transform: "translate(-50%, -50%)",
-                zIndex: isSelected ? 2 : 1,
-              }}
-              aria-label={`${s.player_nickname ?? s.player}, minuto ${s.minute}`}
-            >
-              {isSelected && (
-                <motion.span
-                  key={s.event_id}
-                  className="absolute inset-0 rounded-full border-2 border-(--color-lime)"
-                  initial={{ scale: 1.6, opacity: 0.9 }}
-                  animate={{ scale: 1, opacity: 1 }}
-                  transition={{ duration: 0.25, ease: "easeOut" }}
-                />
-              )}
-              <OutcomeMarker style={style} size={size} />
-            </button>
-          );
-        })}
+          {sorted.map((s) => {
+            const isHome = s.team === match.home_team;
+            const style = outcomeStyle(s.shot_outcome, s.is_goal === 1);
+            const isSelected = s.event_id === selectedShotId;
+            const isGoal = style.shape === "ball";
+            // Same size for every outcome here - the timeline is about
+            // WHEN and WHAT happened, not how big the chance was (that's
+            // what the player's shot map is for). A goal still always
+            // renders above anything else nearby via z-index, never
+            // partly hidden behind a neighboring marker.
+            const leftPct = Math.min(100, ((s.minute ?? 0) / maxMinute) * 100);
+            return (
+              <button
+                key={s.event_id}
+                onClick={() => onSelect(s.event_id)}
+                onMouseEnter={() => setHoverId(s.event_id)}
+                onMouseLeave={() => setHoverId((h) => (h === s.event_id ? null : h))}
+                className="interactive absolute flex items-center justify-center rounded-full"
+                style={{
+                  left: `${leftPct}%`,
+                  top: isHome ? "calc(50% - 20px)" : "calc(50% + 8px)",
+                  width: 28,
+                  height: 28,
+                  transform: "translate(-50%, -50%)",
+                  zIndex: (isGoal ? 10 : 0) + (isSelected ? 2 : 1),
+                }}
+                aria-label={`${s.player_nickname ?? s.player}, minuto ${s.minute}`}
+              >
+                {isSelected && (
+                  <motion.span
+                    key={s.event_id}
+                    className="absolute inset-0 rounded-full border-2 border-(--color-lime)"
+                    initial={{ scale: 1.6, opacity: 0.9 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    transition={{ duration: 0.25, ease: "easeOut" }}
+                  />
+                )}
+                <OutcomeMarker style={style} size={20} />
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       <div className="mb-3 flex items-center gap-2 text-sm font-medium">
@@ -191,11 +199,10 @@ export default function MatchTimeline({ match, shots, selectedShotId, onSelect }
       <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 border-t border-(--color-border) pt-3 text-[11px] text-(--color-text-faint)">
         {OUTCOME_LEGEND.map((style) => (
           <span key={style.kind} className="flex items-center gap-1.5">
-            <OutcomeMarker style={style} size={style.shape === "ball" ? 18 : 19} />
+            <OutcomeMarker style={style} size={18} />
             {style.label}
           </span>
         ))}
-        <span className="ml-auto">Tamaño = xG del disparo</span>
       </div>
     </div>
   );
