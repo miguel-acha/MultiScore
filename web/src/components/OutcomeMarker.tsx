@@ -17,12 +17,19 @@ export default function OutcomeMarker({
   x,
   y,
   className,
+  dotOnly,
 }: {
   style: OutcomeStyle;
   size: number;
   x?: number;
   y?: number;
   className?: string;
+  // Plain colored dot instead of the emoji glyph - the player shot map
+  // plots hundreds of these at once, where a field of tiny emoji read as
+  // noisy clutter; a flat color dot is calmer there and the color still
+  // carries the same meaning via lib/outcomes.ts. A goal stays the ball
+  // artwork either way - it's the one outcome always worth calling out.
+  dotOnly?: boolean;
 }) {
   const props =
     x != null && y != null
@@ -38,11 +45,14 @@ export default function OutcomeMarker({
         // the other outcome dots at a glance.
         <image href="/images/ball.png" x={1} y={1} width={18} height={18} preserveAspectRatio="xMidYMid meet" />
       )}
-      {style.shape === "emoji" && (
-        <text x={10} y={10.5} textAnchor="middle" dominantBaseline="central" fontSize={16}>
-          {style.emoji}
-        </text>
-      )}
+      {style.shape === "emoji" &&
+        (dotOnly ? (
+          <circle cx={10} cy={10} r={7} fill={style.color} stroke="#07090d" strokeWidth={1.3} />
+        ) : (
+          <text x={10} y={10.5} textAnchor="middle" dominantBaseline="central" fontSize={16}>
+            {style.emoji}
+          </text>
+        ))}
     </svg>
   );
 }

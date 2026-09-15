@@ -68,7 +68,7 @@ export default function PlayerShotMap({ shots }: { shots: Shot[] }) {
               transition={{ duration: 0.12 }}
               className="flex w-full items-center gap-2 text-xs"
             >
-              <OutcomeMarker style={displayedStyle} size={16} />
+              <OutcomeMarker style={displayedStyle} size={16} dotOnly />
               <Link to={`/partido/${displayed.match_id}?tiro=${displayed.event_id}`} className="font-medium hover:text-(--color-lime)">
                 {displayedStyle.label} · xG {displayed.xg_full.toFixed(2)}
               </Link>
@@ -131,7 +131,7 @@ export default function PlayerShotMap({ shots }: { shots: Shot[] }) {
                 style={{ transformOrigin: `${sx}px ${sy}px` }}
               />
             )}
-            <OutcomeMarker style={style} size={size} x={sx} y={sy} />
+            <OutcomeMarker style={style} size={size} x={sx} y={sy} dotOnly />
           </motion.g>
         );
       })}
