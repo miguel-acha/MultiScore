@@ -15,11 +15,17 @@ interface CountUpProps {
 
 export default function CountUp({ value, duration = 700, decimals = 0, suffix = "", className, style }: CountUpProps) {
   const [display, setDisplay] = useState(value);
-  const fromRef = useRef(value);
+  // Tracks the actually-displayed number on every frame, not just once an
+  // animation finishes - switching targets again mid-count used to resume
+  // from whatever `value` was at the last completed animation (stale,
+  // possibly several switches behind), snapping the display to a wrong
+  // number before animating on. Starting each new animation from this
+  // instead makes it continuous no matter how fast the target changes.
+  const displayRef = useRef(value);
   const rafRef = useRef<number | null>(null);
 
   useEffect(() => {
-    const from = fromRef.current;
+    const from = displayRef.current;
     const to = value;
     if (from === to) return;
     const start = performance.now();
@@ -28,11 +34,11 @@ export default function CountUp({ value, duration = 700, decimals = 0, suffix = 
     function tick(now: number) {
       const t = Math.min(1, (now - start) / duration);
       const eased = 1 - Math.pow(1 - t, 3);
-      setDisplay(from + (to - from) * eased);
+      const next = from + (to - from) * eased;
+      displayRef.current = next;
+      setDisplay(next);
       if (t < 1) {
         rafRef.current = requestAnimationFrame(tick);
-      } else {
-        fromRef.current = to;
       }
     }
     rafRef.current = requestAnimationFrame(tick);
